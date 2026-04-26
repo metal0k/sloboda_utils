@@ -17,7 +17,6 @@ const DISABLED_IDS: ReadonlySet<string> = new Set([
   "_19",
   "_7",
   "_25",
-  "_18",
   "_7_2",
 ]);
 
