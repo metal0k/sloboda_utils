@@ -266,26 +266,25 @@ body {
 /* ===== House number text ===== */
 
 .map-stage__svg text {
-  fill: rgba(210, 255, 210, 0.88);
-  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-  font-size: 13px;
-  font-weight: 700;
+  cursor: pointer;
+  fill: #fff;
   pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
-  transition: fill 140ms ease;
+  transition: fill 120ms ease;
 }
 
 .map-stage__svg text.is-done {
-  fill: var(--color-done);
+  fill: lawngreen;
 }
 
 .map-stage__svg text.is-issue {
-  fill: var(--color-issue);
+  fill: #ff3b3b;
 }
 
 .map-stage__svg text.is-disabled {
-  fill: rgba(100, 110, 100, 0.4);
+  fill: #999;
+  opacity: 0.4;
 }
 
 /* ===== Sheet backdrop ===== */
