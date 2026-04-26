@@ -11,3 +11,9 @@ desktop.ini
 .env
 .env.local
 .claude/settings.local.json
+
+# Compiled output of the houses generator script (the .ts source is the source of truth).
+scripts/generate-houses.js
+
+# Playwright MCP snapshots (verification artifacts, not source).
+.playwright-mcp/

@@ -1,0 +1,150 @@
+/* Phase 1+2 baseline styles. Phase 3 will replace this entirely. */
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  color: #eee;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  overflow: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#app {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ---------- toolbar ---------- */
+
+.toolbar {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  background: #222;
+  border-bottom: 1px solid #333;
+  flex-wrap: wrap;
+}
+
+.campaign-title {
+  flex: 1 1 auto;
+  min-width: 200px;
+  font-size: 1.25rem;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 4px;
+  outline: none;
+  cursor: text;
+  white-space: pre;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.campaign-title:hover {
+  background: #2a2a2a;
+}
+
+.campaign-title:focus {
+  background: #2a2a2a;
+  outline: 1px solid #4a90e2;
+}
+
+.stats-pill {
+  flex: 0 0 auto;
+  font-variant-numeric: tabular-nums;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    rgba(120, 220, 80, 0.55) 0,
+    rgba(120, 220, 80, 0.55) var(--stats-fill, 0%),
+    #2c2c2c var(--stats-fill, 0%),
+    #2c2c2c 100%
+  );
+  border: 1px solid #3a3a3a;
+  white-space: nowrap;
+}
+
+/* ---------- map area ---------- */
+
+.map-viewport {
+  position: relative;
+  flex: 1 1 auto;
+  overflow: hidden;
+  background: #000;
+  /* Disable native pan/zoom so our gesture handler owns the surface. */
+  touch-action: none;
+}
+
+.map-stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  /* Origin matches the legacy art's natural canvas size:
+     1369 x 1465 (background image), with the SVG anchored at (318, 274). */
+  width: 1369px;
+  height: 1465px;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.map-stage__background {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1369px;
+  height: 1465px;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.map-stage__svg {
+  position: absolute;
+  /* Legacy positioning of the house-numbers SVG over the satellite background. */
+  left: 318px;
+  top: 274px;
+}
+
+.map-stage__svg svg {
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- house number states ---------- */
+
+.map-stage__svg text {
+  cursor: pointer;
+  fill: #fff;
+  transition: fill 120ms ease;
+}
+
+.map-stage__svg text.is-done {
+  fill: lawngreen;
+}
+
+.map-stage__svg text.is-issue {
+  fill: #ff3b3b;
+}
+
+.map-stage__svg text.is-disabled {
+  fill: #999;
+  pointer-events: none;
+  opacity: 0.4;
+  cursor: default;
+}

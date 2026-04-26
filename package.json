@@ -1,22 +1,20 @@
 {
-  "name": "SlobodaMap",
-  "version": "0.0.4",
-  "description": "",
-  "keywords": ["Sloboda"],
-  "license": "",
-  "author": "denis0k",
-  "homepage": ".",
+  "name": "sloboda-map",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Interactive map of Andreyevskaya Sloboda",
   "scripts": {
-    "build": "parcel build --public-url ./ index.html",
-    "dev": "parcel index.html --open",
-    "start": "npm run build && npm run dev",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "generate-houses": "tsc scripts/generate-houses.ts --target ES2022 --module ESNext --moduleResolution Bundler --strict --esModuleInterop --skipLibCheck --types node --outDir scripts && node scripts/generate-houses.js",
+    "prebuild": "npm run generate-houses",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
-    "parcel-bundler": "^1.8.1"
-  },
-  "dependencies": {
-    "bootstrap": "^5.1.3",
-    "jQuery": "^1.7.4"
+    "@types/node": "^20.17.0",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
   }
 }
