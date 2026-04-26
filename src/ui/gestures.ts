@@ -26,6 +26,7 @@ type Pointer = {
 export function enablePanZoom(
   container: HTMLElement,
   target: HTMLElement,
+  options: { fitOnInit?: boolean } = {},
 ): void {
   const t: Transform = { x: 0, y: 0, scale: 1 };
   const pointers = new Map<number, Pointer>();
@@ -188,4 +189,19 @@ export function enablePanZoom(
     },
     { passive: false },
   );
+
+  if (options.fitOnInit) {
+    requestAnimationFrame(() => {
+      const cw = container.clientWidth;
+      const ch = container.clientHeight;
+      const tw = target.offsetWidth;
+      const th = target.offsetHeight;
+      if (tw === 0 || th === 0) return;
+      const s = clampScale(Math.min(cw / tw, ch / th) * 0.92);
+      t.scale = s;
+      t.x = (cw - tw * s) / 2;
+      t.y = (ch - th * s) / 2;
+      apply();
+    });
+  }
 }

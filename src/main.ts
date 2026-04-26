@@ -1,58 +1,64 @@
 // Application entry point.
 //
-// Layout:
+// DOM layout:
 //   #app
 //     .toolbar
-//       .campaign-title  (editable)
-//       .stats-pill
+//       .toolbar__title   (editable campaign name)
+//       .toolbar__stats   (done / total · pct%)
+//       .toolbar__menu    (hamburger → opens sheet)
 //     .map-viewport
-//       .map-stage (transformed by pan/zoom)
+//       .map-stage (pan-zoom target)
 //         img.map-stage__background
-//         div.map-stage__svg  ← raw SVG injected here
+//         div.map-stage__svg ← inline SVG
 
 import "./styles/main.css";
 
 import svgRaw from "../public/sloboda_house_numbers.svg?raw";
 
+import { replaceState, initState } from "./state";
+import { parseUrlHash } from "./url-state";
 import { initMap } from "./map";
-import { initState } from "./state";
 import { initStats } from "./ui/stats";
 import { initTitle } from "./ui/title";
 import { enablePanZoom } from "./ui/gestures";
+import { initSheet } from "./ui/sheet";
+import { showImportBanner } from "./ui/banner";
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
-  className?: string,
+  cls?: string,
 ): HTMLElementTagNameMap[K] {
   const node = document.createElement(tag);
-  if (className) node.className = className;
+  if (cls) node.className = cls;
   return node;
 }
 
 function buildShell(): {
   titleHost: HTMLElement;
   statsHost: HTMLElement;
+  menuBtn: HTMLButtonElement;
   viewport: HTMLElement;
   stage: HTMLElement;
   svgHost: HTMLElement;
 } {
   const app = document.getElementById("app");
-  if (!app) throw new Error("#app element missing from index.html");
+  if (!app) throw new Error("#app missing from index.html");
   app.replaceChildren();
 
   const toolbar = el("div", "toolbar");
-  const titleHost = el("div", "campaign-title");
-  const statsHost = el("div", "stats-pill");
-  toolbar.append(titleHost, statsHost);
+
+  const titleHost = el("div", "toolbar__title");
+  const statsHost = el("div", "toolbar__stats");
+  const menuBtn = el("button", "toolbar__menu btn-icon");
+  menuBtn.setAttribute("aria-label", "Открыть меню");
+  menuBtn.innerHTML = `<span aria-hidden="true">☰</span>`;
+
+  toolbar.append(titleHost, statsHost, menuBtn);
 
   const viewport = el("div", "map-viewport");
   const stage = el("div", "map-stage");
 
   const bg = el("img", "map-stage__background");
-  // public/ assets are served from BASE_URL at both dev and build time.
-  // BASE_URL is '/' in dev and './' (or whatever `base` is) in production.
-  // BASE_URL ends with "/" by Vite convention (e.g. "/" in dev, "./" in
-  // production with base:'./').
   bg.src = `${import.meta.env.BASE_URL}sloboda_map_back.png`;
   bg.alt = "";
   bg.draggable = false;
@@ -64,12 +70,13 @@ function buildShell(): {
   viewport.append(stage);
   app.append(toolbar, viewport);
 
-  return { titleHost, statsHost, viewport, stage, svgHost };
+  return { titleHost, statsHost, menuBtn, viewport, stage, svgHost };
 }
 
 function main(): void {
   initState();
-  const { titleHost, statsHost, viewport, stage, svgHost } = buildShell();
+
+  const { titleHost, statsHost, menuBtn, viewport, stage, svgHost } = buildShell();
 
   const svg = svgHost.querySelector<SVGElement>("svg");
   if (!svg) throw new Error("SVG failed to inject");
@@ -77,7 +84,18 @@ function main(): void {
   initTitle(titleHost);
   initStats(statsHost);
   initMap(svg);
-  enablePanZoom(viewport, stage);
+  enablePanZoom(viewport, stage, { fitOnInit: true });
+
+  const { open } = initSheet();
+  menuBtn.addEventListener("click", open);
+
+  // Cross-device import: check if the URL carries a #s= hash.
+  const incoming = parseUrlHash();
+  if (incoming) {
+    showImportBanner(incoming, () => {
+      replaceState(incoming);
+    });
+  }
 }
 
 main();

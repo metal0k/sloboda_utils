@@ -1,5 +1,4 @@
-// Plain stats pill: "<done>/<total> · <pct>%". No design polish — Phase 3
-// will redesign the visual layer.
+// Stats pill: "<done> / <total> · <pct>%", with issue badge when non-zero.
 
 import { ACTIVE_HOUSE_COUNT } from "../houses";
 import { getState, subscribe } from "../state";
@@ -14,6 +13,7 @@ export function initStats(host: HTMLElement): void {
 
   const sepEl = document.createElement("span");
   sepEl.textContent = " / ";
+  sepEl.className = "stats-pill__sep";
 
   const totalEl = document.createElement("span");
   totalEl.className = "stats-pill__total";
@@ -21,19 +21,33 @@ export function initStats(host: HTMLElement): void {
 
   const dotEl = document.createElement("span");
   dotEl.textContent = " · ";
+  dotEl.className = "stats-pill__sep";
 
   const pctEl = document.createElement("span");
   pctEl.className = "stats-pill__pct";
 
-  host.replaceChildren(doneEl, sepEl, totalEl, dotEl, pctEl);
+  const issueEl = document.createElement("span");
+  issueEl.className = "stats-pill__issue";
+
+  host.replaceChildren(doneEl, sepEl, totalEl, dotEl, pctEl, issueEl);
 
   const render = (): void => {
-    const { done } = getState();
-    const count = done.size;
-    const pct = ACTIVE_HOUSE_COUNT > 0 ? (count / ACTIVE_HOUSE_COUNT) * 100 : 0;
-    doneEl.textContent = String(count);
-    pctEl.textContent = `${pct.toFixed(1)}%`;
+    const { done, issue } = getState();
+    const doneCount = done.size;
+    const issueCount = issue.size;
+    const pct = ACTIVE_HOUSE_COUNT > 0 ? (doneCount / ACTIVE_HOUSE_COUNT) * 100 : 0;
+
+    doneEl.textContent = String(doneCount);
+    pctEl.textContent = `${Math.round(pct)}%`;
     host.style.setProperty("--stats-fill", `${pct.toFixed(2)}%`);
+
+    if (issueCount > 0) {
+      issueEl.textContent = ` · ${issueCount}⚠`;
+      issueEl.hidden = false;
+    } else {
+      issueEl.textContent = "";
+      issueEl.hidden = true;
+    }
   };
 
   subscribe(render);

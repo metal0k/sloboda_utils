@@ -151,3 +151,12 @@ export function cycleStatus(houseId: string): void {
   else if (s === "done") setStatus(houseId, "issue");
   else setStatus(houseId, null);
 }
+
+/** Replace the entire in-memory state (e.g. on JSON/URL import). Saves and notifies. */
+export function replaceState(s: State): void {
+  current.campaign = s.campaign;
+  current.done = new Set(s.done);
+  current.issue = new Set(s.issue);
+  saveState(current);
+  emit();
+}
