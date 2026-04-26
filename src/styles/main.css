@@ -228,47 +228,11 @@ body {
   overflow: visible;
 }
 
-/* ===== House chip circles ===== */
-
-.house-chip {
-  fill: rgba(0, 0, 0, 0.6);
-  stroke: rgba(80, 190, 80, 0.22);
-  stroke-width: 1.5;
-  cursor: pointer;
-  transition: fill 140ms ease, stroke 140ms ease, stroke-width 140ms ease;
-}
-
-.house-chip:hover {
-  fill: rgba(57, 255, 20, 0.12);
-  stroke: rgba(57, 255, 20, 0.5);
-}
-
-.house-chip.is-done {
-  fill: var(--color-done-dim);
-  stroke: var(--color-done);
-  stroke-width: 2;
-}
-
-.house-chip.is-issue {
-  fill: var(--color-issue-dim);
-  stroke: var(--color-issue);
-  stroke-width: 2;
-}
-
-.house-chip.is-disabled {
-  fill: rgba(60, 60, 60, 0.3);
-  stroke: rgba(100, 100, 100, 0.15);
-  cursor: default;
-  opacity: 0.35;
-  pointer-events: none;
-}
-
 /* ===== House number text ===== */
 
 .map-stage__svg text {
   cursor: pointer;
   fill: #fff;
-  pointer-events: none;
   user-select: none;
   -webkit-user-select: none;
   transition: fill 120ms ease;

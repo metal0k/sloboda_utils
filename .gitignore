@@ -11,6 +11,9 @@ desktop.ini
 .env
 .env.local
 .claude/settings.local.json
+creds
+creds.txt
+*.token
 
 # Compiled output of the houses generator script (the .ts source is the source of truth).
 scripts/generate-houses.js
