@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.parcel-cache/
+.cache/
+.idea/
+.vscode/
+*.iml
+desktop.ini
+.DS_Store
+*.log
+.env
+.env.local
+.claude/settings.local.json

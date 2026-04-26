@@ -1,0 +1,55 @@
+<!doctype html>
+<html class="no-js" lang="ru">
+
+<head>
+  <meta charset="utf-8">
+  <title>Карта Андреевской Слободы</title>
+  <meta name="description" content="">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!--  <meta property="og:title" content="">-->
+<!--  <meta property="og:type" content="">-->
+<!--  <meta property="og:url" content="">-->
+<!--  <meta property="og:image" content="">-->
+
+  <link rel="manifest" href="site.webmanifest">
+  <link rel="apple-touch-icon" href="icon.png">
+  <!-- Place favicon.ico in the root directory -->
+
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/main.css">
+
+  <meta name="theme-color" content="#fafafa">
+</head>
+
+<body>
+
+<!-- Add your site or application content here -->
+<!--  <p>Hello world! This is HTML5 Boilerplate.</p>-->
+<script src="js/vendor/modernizr-3.11.2.min.js"></script>
+<script src="js/plugins.js"></script>
+<script src="js/main.js"></script>
+<div id="map_container">
+  <div id="map_header">Заголовок</div>
+  <div id="map_controls" class="hidden">
+    <button id="btn_clear" class="button" role="button">clear</button>
+    <textarea id="txt_selected_houses" cols="3" rows="30"></textarea>
+    <button id="btn_apply_numbers" class = "button" role="button">apply</button>
+  </div>
+  <div id="map_stat">
+    <span id="green_count">0</span>/<span id="total_count">--</span>  <span id="green_precents">0</span>%
+  </div>
+  <img id="map_background" src="img/sloboda_map_back.png"/>
+  <object id="map_houses" data="img/sloboda_house_numbers.svg" type="image/svg+xml"/>
+
+</div>
+
+<!-- Google Analytics: change UA-XXXXX-Y to be your site's ID. -->
+<!--  <script>-->
+<!--    window.ga = function () { ga.q.push(arguments) }; ga.q = []; ga.l = +new Date;-->
+<!--    ga('create', 'UA-XXXXX-Y', 'auto'); ga('set', 'anonymizeIp', true); ga('set', 'transport', 'beacon'); ga('send', 'pageview')-->
+<!--  </script>-->
+<!--  <script src="https://www.google-analytics.com/analytics.js" async></script>-->
+</body>
+
+</html>

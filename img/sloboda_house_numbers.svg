@@ -1,0 +1,110 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
+     width="919" height="858"
+     viewBox="0 0 922 860">
+  <defs>
+    <style>
+      .cls-1 {
+      filter: url(#filter);
+      }
+
+      .cls-2 {
+      font-size: 28px;
+      fill: #fff;
+      font-family: Arial;
+      font-weight: 800;
+      cursor: pointer;
+      }
+      .selected-green {
+        fill: lawngreen;
+      }
+      .selected-red {
+        fill: darkred;
+      }
+      .disabled {
+        fill: lightgray;
+        cursor: default;
+      }
+    </style>
+    <filter id="filter" filterUnits="userSpaceOnUse">
+      <feOffset result="offset" dx="2.007" dy="2.229" in="SourceAlpha"/>
+      <feGaussianBlur result="blur" stdDeviation="1.732"/>
+      <feFlood result="flood" flood-opacity="0.35"/>
+      <feComposite result="composite" operator="in" in2="blur"/>
+      <feBlend result="blend" in="SourceGraphic"/>
+    </filter>
+  </defs>
+  <g id="house_numbers" data-name="house numbers" class="cls-1">
+    <text id="_1" data-name="1" class="cls-2" x="193.703" y="798.202">1</text>
+    <text id="_2" data-name="2" class="cls-2" x="274.702" y="857.703">2</text>
+    <text id="_4" data-name="4" class="cls-2" x="306.203" y="808.203">4</text>
+    <text id="_6" data-name="6" class="cls-2" x="357.702" y="765.703">6</text>
+    <text id="_21" data-name="21" class="cls-2" x="148.679" y="759.664">21</text>
+    <text id="_20" data-name="20" class="cls-2" x="118.202" y="714.703">20</text>
+    <text id="_19" data-name="19" class="cls-2" x="85.203" y="675.203">19</text>
+    <text id="_38" data-name="38" class="cls-2" x="48.702" y="630.703">38</text>
+    <text id="_39" data-name="39" class="cls-2" x="-0.297" y="576.204">39</text>
+    <text id="_41" data-name="41" class="cls-2" x="39.203" y="528.703">41</text>
+    <text id="_3" data-name="3" class="cls-2" x="256.203" y="741.703">3</text>
+    <text id="_22" data-name="22" class="cls-2" x="207.702" y="692.202">22</text>
+    <text id="_23" data-name="23" class="cls-2" x="155.702" y="632.703">23</text>
+    <text id="_24" data-name="24" class="cls-2" x="257.702" y="648.704">24</text>
+    <text id="_40" data-name="40" class="cls-2" x="121.203" y="583.703">40</text>
+    <text id="_43" data-name="43" class="cls-2" x="91.703" y="493.704">43</text>
+    <text id="_45" data-name="45" class="cls-2" x="138.703" y="448.204">45</text>
+    <text id="_42" data-name="42" class="cls-2" x="167.703" y="539.204">42</text>
+    <text id="_44" data-name="44" class="cls-2" x="219.203" y="492.703">44</text>
+    <text id="_47" data-name="47" class="cls-2" x="183.702" y="407.702">47</text>
+    <text id="_46" data-name="46" class="cls-2" x="270.202" y="451.203">46</text>
+    <text id="_49" data-name="49" class="cls-2" x="233.202" y="366.703">49</text>
+    <text id="_51" data-name="51" class="cls-2" x="286.202" y="320.703">51</text>
+    <text id="_53" data-name="53" class="cls-2" x="330.703" y="282.203">53</text>
+    <text id="_48" data-name="48" class="cls-2" x="321.477" y="411.164">48</text>
+    <text id="_50" data-name="50" class="cls-2" x="359.202" y="374.703">50</text>
+    <text id="_52" data-name="52" class="cls-2" x="400.702" y="341.703">52</text>
+    <text id="_54" data-name="54" class="cls-2" x="461.702" y="290.203">54</text>
+    <text id="_37" data-name="37" class="cls-2" x="516.202" y="345.202">37</text>
+    <text id="_36" data-name="36" class="cls-2" x="572.702" y="384.204">36</text>
+    <text id="_55" data-name="55" class="cls-2" x="419.703" y="247.702">55</text>
+    <text id="_56" data-name="56" class="cls-2" x="376.702" y="206.703">56</text>
+    <text id="_57" data-name="57" class="cls-2" x="302.702" y="206.703">57</text>
+    <text id="_58" data-name="58" class="cls-2" x="240.703" y="227.203">58</text>
+    <text id="_8" data-name="8" class="cls-2" x="405.202" y="725.703">8</text>
+    <text id="_10" data-name="10" class="cls-2" x="446.714" y="685.126">10</text>
+    <text id="_12" data-name="12" class="cls-2" x="492.726" y="642.625">12</text>
+    <text id="_14" data-name="14" class="cls-2" x="540.75" y="595.663">14</text>
+    <text id="_16" data-name="16" class="cls-2" x="588.703" y="559.703">16</text>
+    <text id="_5" data-name="5" class="cls-2" x="303.202" y="698.703">5</text>
+    <text id="_7" data-name="7" class="cls-2" x="350.702" y="659.203">7</text>
+    <text id="_9" data-name="9" class="cls-2" x="399.703" y="618.202">9</text>
+    <text id="_11" data-name="11" class="cls-2" x="435.202" y="574.704">11</text>
+    <text id="_13" data-name="13" class="cls-2" x="482.703" y="533.703">13</text>
+    <text id="_15" data-name="15" class="cls-2" x="536.203" y="489.203">15</text>
+    <text id="_26" data-name="26" class="cls-2" x="306.703" y="608.703">26</text>
+    <text id="_28" data-name="28" class="cls-2" x="354.702" y="567.702">28</text>
+    <text id="_30" data-name="30" class="cls-2" x="402.702" y="526.203">30</text>
+    <text id="_32" data-name="32" class="cls-2" x="447.703" y="483.704">32</text>
+    <text id="_34" data-name="34" class="cls-2" x="495.703" y="441.704">34</text>
+    <text id="_25" data-name="25" class="cls-2" x="210.703" y="593.204">25</text>
+    <text id="_27" data-name="27" class="cls-2" x="257.202" y="543.703">27</text>
+    <text id="_29" data-name="29" class="cls-2" x="303.703" y="503.203">29</text>
+    <text id="_31" data-name="31" class="cls-2" x="351.202" y="463.202">31</text>
+    <text id="_33" data-name="33" class="cls-2" x="397.203" y="424.704">33</text>
+    <text id="_35" data-name="35" class="cls-2" x="441.214" y="388.164">35</text>
+    <text id="_17" data-name="17" class="cls-2" x="615.203" y="440.703">17</text>
+    <text id="_18" data-name="18" class="cls-2" x="634.203" y="507.703">18</text>
+    <text id="_1_2" data-name="1/2" class="cls-2" x="659.461" y="22.334">1/2</text>
+    <text id="_2_2" data-name="2/2" class="cls-2" x="686.794" y="70.909">2/2</text>
+    <text id="_3_2" data-name="3/2" class="cls-2" x="705.806" y="120.983">3/2</text>
+    <text id="_4_2" data-name="4/2" class="cls-2" x="729.622" y="167.113">4/2</text>
+    <text id="_5_2" data-name="5/2" class="cls-2" x="747.968" y="220.853">5/2</text>
+    <text id="_6_2" data-name="6/2" class="cls-2" x="770.208" y="268.504">6/2</text>
+    <text id="_7_2" data-name="7/2" class="cls-2" x="791.89" y="316.182">7/2</text>
+    <text id="_8_2" data-name="8/2" class="cls-2" x="819.263" y="363.853">8/2</text>
+    <text id="_9_2" data-name="9/2" class="cls-2" x="841.704" y="420.401">9/2</text>
+    <text id="_10_2" data-name="10/2" class="cls-2" x="851.526" y="468.252">10/2</text>
+    <text id="_61" data-name="61" class="cls-2" x="170.202" y="236.703">61</text>
+    <text id="_63" data-name="63" class="cls-2" x="158.203" y="326.702">63</text>
+    <text id="_60" data-name="60" class="cls-2" x="215.203" y="277.703">60</text>
+    <text id="_62" data-name="62" class="cls-2" x="118.202" y="279.702">62</text>
+  </g>
+</svg>

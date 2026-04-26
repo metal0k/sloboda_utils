@@ -1,0 +1,22 @@
+{
+  "name": "SlobodaMap",
+  "version": "0.0.4",
+  "description": "",
+  "keywords": ["Sloboda"],
+  "license": "",
+  "author": "denis0k",
+  "homepage": ".",
+  "scripts": {
+    "build": "parcel build --public-url ./ index.html",
+    "dev": "parcel index.html --open",
+    "start": "npm run build && npm run dev",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "devDependencies": {
+    "parcel-bundler": "^1.8.1"
+  },
+  "dependencies": {
+    "bootstrap": "^5.1.3",
+    "jQuery": "^1.7.4"
+  }
+}
