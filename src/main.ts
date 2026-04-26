@@ -10,8 +10,19 @@
 //       .map-stage (pan-zoom target)
 //         img.map-stage__background
 //         div.map-stage__svg ← inline SVG
+//       .zoom-controls
 
 import "./styles/main.css";
+
+// Material Web Components (registers custom elements globally)
+import "@material/web/button/filled-button.js";
+import "@material/web/button/outlined-button.js";
+import "@material/web/button/text-button.js";
+import "@material/web/iconbutton/icon-button.js";
+import "@material/web/fab/fab.js";
+import "@material/web/dialog/dialog.js";
+import "@material/web/switch/switch.js";
+import "@material/web/icon/icon.js";
 
 import svgRaw from "../public/sloboda_house_numbers.svg?raw";
 
@@ -25,6 +36,42 @@ import { initTitle } from "./ui/title";
 import { enablePanZoom } from "./ui/gestures";
 import { initSheet } from "./ui/sheet";
 import { showImportBanner } from "./ui/banner";
+import { initFab } from "./ui/fab";
+import { openShareDialog } from "./ui/share-dialog";
+
+// ---------- localStorage zoom persistence ----------
+
+const ZOOM_KEY = "slobodaZoom/v1";
+
+function loadSavedZoom(): { x: number; y: number; scale: number } | null {
+  try {
+    const raw = localStorage.getItem(ZOOM_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as unknown;
+    if (
+      parsed &&
+      typeof parsed === "object" &&
+      "x" in parsed &&
+      "y" in parsed &&
+      "scale" in parsed
+    ) {
+      return parsed as { x: number; y: number; scale: number };
+    }
+  } catch {
+    // ignore malformed data
+  }
+  return null;
+}
+
+function saveZoom(t: { x: number; y: number; scale: number }): void {
+  try {
+    localStorage.setItem(ZOOM_KEY, JSON.stringify(t));
+  } catch {
+    // ignore (private browsing quota)
+  }
+}
+
+// ---------- helpers ----------
 
 function el<K extends keyof HTMLElementTagNameMap>(
   tag: K,
@@ -53,11 +100,11 @@ function buildShell(): {
   const titleHost = el("div", "toolbar__title");
   const statsHost = el("div", "toolbar__stats");
   const themeBtn = el("button", "toolbar__theme btn-icon");
-  themeBtn.setAttribute("aria-label", "Переключить тему");
+  // icon/label initialised by initTheme()
 
   const menuBtn = el("button", "toolbar__menu btn-icon");
   menuBtn.setAttribute("aria-label", "Открыть меню");
-  menuBtn.innerHTML = `<span aria-hidden="true">☰</span>`;
+  menuBtn.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true">menu</span>`;
 
   toolbar.append(titleHost, statsHost, themeBtn, menuBtn);
 
@@ -79,6 +126,28 @@ function buildShell(): {
   return { titleHost, statsHost, themeBtn, menuBtn, viewport, stage, svgHost };
 }
 
+function buildZoomControls(viewport: HTMLElement, onZoomIn: () => void, onZoomOut: () => void, onReset: () => void): void {
+  const wrap = el("div", "zoom-controls");
+
+  const btnOut = el("button", "zoom-btn");
+  btnOut.setAttribute("aria-label", "Уменьшить");
+  btnOut.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true">remove</span>`;
+  btnOut.addEventListener("click", onZoomOut);
+
+  const btnReset = el("button", "zoom-btn zoom-btn--label");
+  btnReset.setAttribute("aria-label", "Вписать карту");
+  btnReset.textContent = "Fit";
+  btnReset.addEventListener("click", onReset);
+
+  const btnIn = el("button", "zoom-btn");
+  btnIn.setAttribute("aria-label", "Увеличить");
+  btnIn.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true">add</span>`;
+  btnIn.addEventListener("click", onZoomIn);
+
+  wrap.append(btnOut, btnReset, btnIn);
+  viewport.appendChild(wrap);
+}
+
 function main(): void {
   initSettings();
   applyInitialTheme();
@@ -93,10 +162,25 @@ function main(): void {
   initStats(statsHost);
   initTheme(themeBtn);
   initMap(svg);
-  enablePanZoom(viewport, stage, { fitOnInit: true });
+
+  const savedZoom = loadSavedZoom();
+  const panZoom = enablePanZoom(viewport, stage, {
+    fitOnInit: true,
+    initialTransform: savedZoom,
+    onTransformChange: saveZoom,
+  });
+
+  buildZoomControls(
+    viewport,
+    () => panZoom.zoomIn(),
+    () => panZoom.zoomOut(),
+    () => panZoom.resetZoom(),
+  );
 
   const { open } = initSheet();
   menuBtn.addEventListener("click", open);
+
+  initFab(openShareDialog);
 
   // Cross-device import: check if the URL carries a #s= hash.
   const incoming = parseUrlHash();

@@ -1,4 +1,5 @@
 // Import-from-URL banner shown when the page loads with a #s= hash.
+// Styled as a plain MD3 elevated card (no glass/blur).
 
 import type { State } from "../state";
 
@@ -22,8 +23,8 @@ export function showImportBanner(
       <small class="import-banner__age">(обновлено ${ageStr})</small>
     </span>
     <div class="import-banner__actions">
-      <button class="btn btn-primary import-banner__accept">Принять</button>
-      <button class="btn import-banner__cancel">Отменить</button>
+      <button class="import-banner__accept">Принять</button>
+      <button class="import-banner__cancel">Отменить</button>
     </div>
   `;
 

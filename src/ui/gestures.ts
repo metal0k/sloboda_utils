@@ -7,11 +7,13 @@
 // fire on the SVG <text>; only past `DRAG_THRESHOLD_PX` do we capture and
 // suppress the synthetic click.
 
-const MIN_SCALE = 0.25;
+const MIN_SCALE = 0.15;
 const MAX_SCALE = 6;
 const DRAG_THRESHOLD_PX = 5;
 const WHEEL_ZOOM_STEP = 0.0015;
 const TRACKPAD_ZOOM_STEP = 0.01;
+const ZOOM_BUTTON_FACTOR = 1.25;
+const SAVE_DEBOUNCE_MS = 400;
 
 type Transform = { x: number; y: number; scale: number };
 
@@ -23,17 +25,28 @@ type Pointer = {
   y: number;
 };
 
+export interface PanZoomController {
+  zoomIn(): void;
+  zoomOut(): void;
+  resetZoom(): void;
+}
+
 export function enablePanZoom(
   container: HTMLElement,
   target: HTMLElement,
-  options: { fitOnInit?: boolean } = {},
-): void {
+  options: {
+    fitOnInit?: boolean;
+    initialTransform?: { x: number; y: number; scale: number } | null;
+    onTransformChange?: (t: { x: number; y: number; scale: number }) => void;
+  } = {},
+): PanZoomController {
   const t: Transform = { x: 0, y: 0, scale: 1 };
   const pointers = new Map<number, Pointer>();
   let pinchStartDist = 0;
   let pinchStartScale = 1;
   let suppressNextClick = false;
   let didDrag = false;
+  let saveTimer = 0;
 
   container.style.touchAction = "none";
 
@@ -47,6 +60,14 @@ export function enablePanZoom(
   const clampScale = (s: number): number =>
     Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
 
+  const scheduleSave = (): void => {
+    if (!options.onTransformChange) return;
+    clearTimeout(saveTimer);
+    saveTimer = window.setTimeout(() => {
+      options.onTransformChange!({ x: t.x, y: t.y, scale: t.scale });
+    }, SAVE_DEBOUNCE_MS);
+  };
+
   const containerPoint = (e: PointerEvent | WheelEvent): { x: number; y: number } => {
     const rect = container.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
@@ -57,13 +78,11 @@ export function enablePanZoom(
     const newScale = clampScale(t.scale * factor);
     const real = newScale / t.scale;
     if (real === 1) return;
-    // The point (cx, cy) in container coords corresponds to
-    // ((cx - t.x) / t.scale, (cy - t.y) / t.scale) in target coords.
-    // We want that target point to remain at (cx, cy) after rescale.
     t.x = cx - (cx - t.x) * real;
     t.y = cy - (cy - t.y) * real;
     t.scale = newScale;
     apply();
+    scheduleSave();
   };
 
   // ---------- pointer events ----------
@@ -99,13 +118,10 @@ export function enablePanZoom(
       const totalDy = p.y - p.startY;
       const dist = Math.hypot(totalDx, totalDy);
       if (!didDrag && dist < DRAG_THRESHOLD_PX) {
-        // Below threshold — keep the click alive, don't pan yet.
         return;
       }
       if (!didDrag) {
         didDrag = true;
-        // Capture so subsequent move/up events reach us even if the pointer
-        // leaves the target (e.g. fast drag).
         try {
           container.setPointerCapture(e.pointerId);
         } catch {
@@ -142,6 +158,7 @@ export function enablePanZoom(
     if (didDrag) {
       suppressNextClick = true;
       didDrag = false;
+      scheduleSave();
     }
     if (container.hasPointerCapture(e.pointerId)) {
       try {
@@ -155,13 +172,11 @@ export function enablePanZoom(
   container.addEventListener("pointerup", endPointer);
   container.addEventListener("pointercancel", endPointer);
   container.addEventListener("pointerleave", (e) => {
-    // Only end this pointer; multi-touch leaves are common during pinch.
     if (pointers.has(e.pointerId)) endPointer(e);
   });
 
   // ---------- click suppression after drag ----------
 
-  // Capture-phase listener so we run before the SVG's click handler.
   container.addEventListener(
     "click",
     (e) => {
@@ -181,8 +196,6 @@ export function enablePanZoom(
     (e) => {
       e.preventDefault();
       const { x, y } = containerPoint(e);
-      // Trackpad pinch on Mac comes through as ctrlKey + wheel; that's a
-      // smaller, smoother delta than a mouse wheel. Use a different step.
       const step = e.ctrlKey ? TRACKPAD_ZOOM_STEP : WHEEL_ZOOM_STEP;
       const factor = Math.exp(-e.deltaY * step);
       zoomAt(x, y, factor);
@@ -190,18 +203,70 @@ export function enablePanZoom(
     { passive: false },
   );
 
+  // ---------- fit helpers ----------
+
+  const computeFitTransform = (): Transform => {
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    const tw = target.offsetWidth;
+    const th = target.offsetHeight;
+    if (tw === 0 || th === 0) return { x: 0, y: 0, scale: 1 };
+    // Fit-to-longest-side: portrait → fill height, landscape → fill width.
+    const isPortrait = cw < ch;
+    const s = clampScale(isPortrait ? ch / th : cw / tw);
+    return { x: (cw - tw * s) / 2, y: (ch - th * s) / 2, scale: s };
+  };
+
+  // ---------- init ----------
+
   if (options.fitOnInit) {
     requestAnimationFrame(() => {
-      const cw = container.clientWidth;
-      const ch = container.clientHeight;
-      const tw = target.offsetWidth;
-      const th = target.offsetHeight;
-      if (tw === 0 || th === 0) return;
-      const s = clampScale(Math.min(cw / tw, ch / th) * 0.92);
-      t.scale = s;
-      t.x = (cw - tw * s) / 2;
-      t.y = (ch - th * s) / 2;
+      if (options.initialTransform) {
+        // Restore saved scale but recompute the centered position for the
+        // current viewport — raw x/y coordinates don't transfer across devices.
+        const s = clampScale(options.initialTransform.scale);
+        const cw = container.clientWidth;
+        const ch = container.clientHeight;
+        const tw = target.offsetWidth;
+        const th = target.offsetHeight;
+        t.scale = s;
+        t.x = (cw - tw * s) / 2;
+        t.y = (ch - th * s) / 2;
+      } else {
+        const fit = computeFitTransform();
+        t.x = fit.x;
+        t.y = fit.y;
+        t.scale = fit.scale;
+      }
       apply();
     });
   }
+
+  // ---------- controller ----------
+
+  const centerOf = (): { cx: number; cy: number } => ({
+    cx: container.clientWidth / 2,
+    cy: container.clientHeight / 2,
+  });
+
+  return {
+    zoomIn() {
+      const { cx, cy } = centerOf();
+      zoomAt(cx, cy, ZOOM_BUTTON_FACTOR);
+    },
+    zoomOut() {
+      const { cx, cy } = centerOf();
+      zoomAt(cx, cy, 1 / ZOOM_BUTTON_FACTOR);
+    },
+    resetZoom() {
+      requestAnimationFrame(() => {
+        const fit = computeFitTransform();
+        t.x = fit.x;
+        t.y = fit.y;
+        t.scale = fit.scale;
+        apply();
+        scheduleSave();
+      });
+    },
+  };
 }

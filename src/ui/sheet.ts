@@ -1,12 +1,13 @@
-// Bottom-sheet (mobile) / sidebar (desktop): Share, Lists, Clear All, Import JSON.
-// Phase 3 rewrite — snapshot+commit pattern for Зелёный and Красный lists.
+// Bottom-sheet (mobile) / sidebar (desktop): Lists, Clear All, Import JSON.
+// Share moved to FAB + share-dialog (see fab.ts / share-dialog.ts).
+
+import type { MdSwitch } from "@material/web/switch/switch.js";
+import type { MdFilledButton } from "@material/web/button/filled-button.js";
 
 import { isValidLabel, labelToHouseId, houseIdToLabel } from "../houses";
 import { clearAll, getState, replaceState, setStatus, subscribe } from "../state";
 import type { State } from "../state";
-import { encodeStateToHash } from "../url-state";
 import { getSettings, setRedListMode, subscribeSettings } from "../settings";
-import { shareImage } from "./share-image";  // Phase 4 creates this
 
 // ---------- toast ----------
 
@@ -23,7 +24,7 @@ export function showToast(msg: string, type: "ok" | "err" = "ok"): void {
   }, 3000);
 }
 
-// ---------- JSON serialisation ----------
+// ---------- JSON deserialisation ----------
 
 type PersistedJson = {
   version: number;
@@ -32,17 +33,6 @@ type PersistedJson = {
   issue: string[];
   updatedAt: number;
 };
-
-function stateToJson(state: State): string {
-  const payload: PersistedJson = {
-    version: 2,
-    campaign: state.campaign,
-    done: [...state.done],
-    issue: [...state.issue],
-    updatedAt: state.updatedAt,
-  };
-  return JSON.stringify(payload, null, 2);
-}
 
 function jsonToState(json: string): State | null {
   try {
@@ -74,7 +64,7 @@ function parseBulk(text: string): string[] {
 // ---------- snapshot helpers ----------
 
 function naturalSort(a: string, b: string): number {
-  const parse = (s: string): number => s.includes("/") ? parseFloat(s) + 0.5 : parseFloat(s);
+  const parse = (s: string): number => (s.includes("/") ? parseFloat(s) + 0.5 : parseFloat(s));
   return parse(a) - parse(b);
 }
 
@@ -129,16 +119,19 @@ export function initSheet(): { open: () => void; close: () => void } {
   panel.setAttribute("aria-modal", "true");
   panel.setAttribute("aria-label", "Меню");
 
+  // --- drag-handle (mobile only — hidden on desktop via CSS) ---
+  const dragHandle = document.createElement("div");
+  dragHandle.className = "sheet-drag-handle";
+
   // --- header ---
   const header = document.createElement("div");
   header.className = "sheet-header";
   const title = document.createElement("span");
   title.className = "sheet-title";
   title.textContent = "Меню";
-  const closeBtn = document.createElement("button");
-  closeBtn.className = "sheet-close btn-icon";
+  const closeBtn = document.createElement("md-icon-button");
   closeBtn.setAttribute("aria-label", "Закрыть");
-  closeBtn.textContent = "✕";
+  closeBtn.innerHTML = `<md-icon>close</md-icon>`;
   header.append(title, closeBtn);
 
   // --- body ---
@@ -150,78 +143,6 @@ export function initSheet(): { open: () => void; close: () => void } {
     d.className = "sheet-divider";
     return d;
   }
-
-  // ===== Collapsible «Поделиться» section =====
-
-  const shareCollapseBtn = document.createElement("button");
-  shareCollapseBtn.className = "btn sheet-collapse-header";
-  shareCollapseBtn.setAttribute("aria-expanded", "false");
-  shareCollapseBtn.textContent = "Поделиться ▸";
-
-  const shareCollapseBody = document.createElement("div");
-  shareCollapseBody.hidden = true;
-  shareCollapseBody.style.display = "flex";
-  shareCollapseBody.style.flexDirection = "column";
-  shareCollapseBody.style.gap = "8px";
-  shareCollapseBody.style.paddingTop = "8px";
-
-  shareCollapseBtn.addEventListener("click", () => {
-    const isOpen = shareCollapseBtn.getAttribute("aria-expanded") === "true";
-    const next = !isOpen;
-    shareCollapseBtn.setAttribute("aria-expanded", next ? "true" : "false");
-    shareCollapseBody.hidden = !next;
-    shareCollapseBtn.textContent = next ? "Поделиться ▾" : "Поделиться ▸";
-  });
-
-  // Copy link button
-  const copyLinkBtn = document.createElement("button");
-  copyLinkBtn.className = "btn btn-primary sheet-action";
-  copyLinkBtn.textContent = "Скопировать ссылку";
-
-  copyLinkBtn.addEventListener("click", () => {
-    const hash = encodeStateToHash(getState());
-    const url = location.origin + location.pathname + hash;
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url).then(
-        () => showToast("Ссылка скопирована"),
-        () => { prompt("Скопируйте ссылку:", url); },
-      );
-    } else {
-      prompt("Скопируйте ссылку:", url);
-    }
-  });
-
-  // Export JSON button
-  const exportBtn = document.createElement("button");
-  exportBtn.className = "btn sheet-action";
-  exportBtn.textContent = "Экспорт в JSON";
-
-  exportBtn.addEventListener("click", () => {
-    const json = stateToJson(getState());
-    const blob = new Blob([json], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `sloboda-${Date.now()}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
-    showToast("Файл сохранён");
-  });
-
-  // Share image button
-  const shareImageBtn = document.createElement("button");
-  shareImageBtn.className = "btn sheet-action";
-  shareImageBtn.textContent = "Поделиться картинкой";
-
-  shareImageBtn.addEventListener("click", async () => {
-    try {
-      await shareImage(getState());
-    } catch {
-      showToast("Не удалось создать картинку", "err");
-    }
-  });
-
-  shareCollapseBody.append(copyLinkBtn, exportBtn, shareImageBtn);
 
   // ===== Зелёный список =====
 
@@ -237,8 +158,8 @@ export function initSheet(): { open: () => void; close: () => void } {
   const greenHint = document.createElement("div");
   greenHint.className = "sheet-hint";
 
-  const greenApplyBtn = document.createElement("button");
-  greenApplyBtn.className = "btn btn-primary sheet-action";
+  const greenApplyBtn = document.createElement("md-filled-button") as MdFilledButton;
+  greenApplyBtn.className = "btn-md-primary";
   greenApplyBtn.textContent = "Применить";
   greenApplyBtn.disabled = true;
 
@@ -263,15 +184,14 @@ export function initSheet(): { open: () => void; close: () => void } {
   const redToggleRow = document.createElement("div");
   redToggleRow.className = "sheet-toggle-row";
 
-  const redCheckbox = document.createElement("input");
-  redCheckbox.type = "checkbox";
-  redCheckbox.id = "sheet-red-toggle";
+  const redSwitch = document.createElement("md-switch") as MdSwitch;
+  redSwitch.id = "sheet-red-toggle";
 
   const redToggleLabel = document.createElement("label");
   redToggleLabel.htmlFor = "sheet-red-toggle";
   redToggleLabel.textContent = "Красный список";
 
-  redToggleRow.append(redCheckbox, redToggleLabel);
+  redToggleRow.append(redSwitch, redToggleLabel);
 
   const redSection = document.createElement("div");
   redSection.style.display = "flex";
@@ -286,8 +206,8 @@ export function initSheet(): { open: () => void; close: () => void } {
   const redHint = document.createElement("div");
   redHint.className = "sheet-hint";
 
-  const redApplyBtn = document.createElement("button");
-  redApplyBtn.className = "btn btn-danger-primary sheet-action";
+  const redApplyBtn = document.createElement("md-filled-button") as MdFilledButton;
+  redApplyBtn.className = "btn-md-error";
   redApplyBtn.textContent = "Применить";
   redApplyBtn.disabled = true;
 
@@ -311,11 +231,11 @@ export function initSheet(): { open: () => void; close: () => void } {
 
   function applyRedSectionVisibility(on: boolean): void {
     redSection.hidden = !on;
-    redCheckbox.checked = on;
+    redSwitch.selected = on;
   }
 
-  redCheckbox.addEventListener("change", () => {
-    const on = redCheckbox.checked;
+  redSwitch.addEventListener("change", () => {
+    const on = redSwitch.selected;
     setRedListMode(on);
     if (!on) showToast("Красный список скрыт");
     applyRedSectionVisibility(on);
@@ -323,28 +243,33 @@ export function initSheet(): { open: () => void; close: () => void } {
 
   // ===== Очистить всё =====
 
-  const clearBtn = document.createElement("button");
-  clearBtn.className = "btn btn-danger sheet-action";
+  const clearBtn = document.createElement("md-text-button");
+  clearBtn.style.cssText = `
+    --md-text-button-label-text-color: var(--md-sys-color-error);
+    --md-text-button-hover-label-text-color: var(--md-sys-color-error);
+    --md-text-button-pressed-label-text-color: var(--md-sys-color-error);
+    width: 100%;
+  `;
   clearBtn.textContent = "Очистить всё";
 
   let clearTimer: ReturnType<typeof setTimeout> | null = null;
 
   clearBtn.addEventListener("click", () => {
-    if (clearBtn.dataset.confirm) {
+    if (clearBtn.dataset["confirm"]) {
       clearAll();
       showToast("Состояние очищено");
       resetClear();
       close();
     } else {
       clearBtn.textContent = "Нажмите ещё раз для подтверждения";
-      clearBtn.dataset.confirm = "1";
+      clearBtn.dataset["confirm"] = "1";
       clearTimer = setTimeout(resetClear, 3500);
     }
   });
 
   function resetClear(): void {
     clearBtn.textContent = "Очистить всё";
-    delete clearBtn.dataset.confirm;
+    delete clearBtn.dataset["confirm"];
     if (clearTimer) {
       clearTimeout(clearTimer);
       clearTimer = null;
@@ -353,8 +278,8 @@ export function initSheet(): { open: () => void; close: () => void } {
 
   // ===== Импорт JSON (bottom, de-emphasized) =====
 
-  const importBtn = document.createElement("button");
-  importBtn.className = "btn sheet-action";
+  const importBtn = document.createElement("md-outlined-button");
+  importBtn.style.width = "100%";
   importBtn.textContent = "Импорт из JSON";
 
   const fileInput = document.createElement("input");
@@ -385,9 +310,6 @@ export function initSheet(): { open: () => void; close: () => void } {
   // ===== Assemble body =====
 
   body.append(
-    shareCollapseBtn,
-    shareCollapseBody,
-    divider(),
     greenLabel,
     greenArea,
     greenHint,
@@ -402,8 +324,44 @@ export function initSheet(): { open: () => void; close: () => void } {
     fileInput,
   );
 
-  panel.append(header, body);
+  panel.append(dragHandle, header, body);
   document.body.append(backdrop, panel);
+
+  // ===== Swipe-to-close (mobile drag handle) =====
+
+  let dragStartY = 0;
+  let dragging = false;
+
+  dragHandle.addEventListener("pointerdown", (e) => {
+    if (window.innerWidth >= 640) return;
+    dragStartY = e.clientY;
+    dragging = true;
+    panel.style.transition = "none";
+    dragHandle.setPointerCapture(e.pointerId);
+  });
+
+  dragHandle.addEventListener("pointermove", (e) => {
+    if (!dragging) return;
+    const dy = Math.max(0, e.clientY - dragStartY);
+    panel.style.transform = `translateY(${dy}px)`;
+  });
+
+  const endDrag = (e: PointerEvent, commit: boolean): void => {
+    if (!dragging) return;
+    dragging = false;
+    panel.style.transition = "";
+    if (commit) {
+      const dy = Math.max(0, e.clientY - dragStartY);
+      if (dy > 80) {
+        close();
+        return;
+      }
+    }
+    panel.style.transform = "";
+  };
+
+  dragHandle.addEventListener("pointerup", (e) => endDrag(e, true));
+  dragHandle.addEventListener("pointercancel", (e) => endDrag(e, false));
 
   // ===== Subscriptions =====
 
@@ -427,6 +385,7 @@ export function initSheet(): { open: () => void; close: () => void } {
   function close(): void {
     panel.classList.remove("is-open");
     backdrop.classList.remove("is-open");
+    panel.style.transform = "";
     resetClear();
     if (unsubState) { unsubState(); unsubState = null; }
     if (unsubSettings) { unsubSettings(); unsubSettings = null; }
@@ -434,14 +393,10 @@ export function initSheet(): { open: () => void; close: () => void } {
   }
 
   function open(): void {
-    // Initialise from current settings
     const settings = getSettings();
     applyRedSectionVisibility(settings.redListMode);
-
-    // Populate snapshots
     refreshSnapshots();
 
-    // Subscribe while open
     unsubState = subscribe(() => refreshSnapshots());
     unsubSettings = subscribeSettings((s) => {
       applyRedSectionVisibility(s.redListMode);
@@ -452,6 +407,7 @@ export function initSheet(): { open: () => void; close: () => void } {
     };
     document.addEventListener("keydown", keydownHandler);
 
+    panel.style.transform = "";
     panel.classList.add("is-open");
     backdrop.classList.add("is-open");
   }

@@ -5,6 +5,7 @@
 
 import type { State } from "../state";
 import { ACTIVE_HOUSE_COUNT } from "../houses";
+import { COLOR_DONE, COLOR_ISSUE } from "./colors";
 
 import svgRaw from "../../public/sloboda_house_numbers.svg?raw";
 
@@ -36,8 +37,8 @@ function modifySvg(
   // Inject status colour rules.
   const style = doc.createElementNS("http://www.w3.org/2000/svg", "style");
   style.textContent =
-    "text.is-done{fill:#39ff14}" +
-    "text.is-issue{fill:#ff4444}" +
+    `text.is-done{fill:${COLOR_DONE}}` +
+    `text.is-issue{fill:${COLOR_ISSUE}}` +
     "text.is-disabled{fill:#999;opacity:0.4}";
   doc.documentElement.prepend(style);
 
@@ -136,7 +137,7 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
 
   // --- 2. Stats line ---
   const statsY = finalTitleY + titleLineHeight + 20;
-  ctx.fillStyle = "#39ff14";
+  ctx.fillStyle = COLOR_DONE;
   ctx.font = "38px sans-serif";
   ctx.fillText(`${done} / ${total} · ${pct}%`, CENTER_X, statsY);
 
@@ -153,10 +154,10 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   ctx.roundRect(barX, barY, barW, barH, radius);
   ctx.fill();
 
-  // Done segment (#39ff14).
+  // Done segment.
   const doneW = total > 0 ? Math.round((done / total) * barW) : 0;
   if (doneW > 0) {
-    ctx.fillStyle = "#39ff14";
+    ctx.fillStyle = COLOR_DONE;
     ctx.beginPath();
     if (doneW >= barW) {
       ctx.roundRect(barX, barY, doneW, barH, radius);
@@ -167,11 +168,11 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
     ctx.fill();
   }
 
-  // Issue segment (#ff4444), immediately after done.
+  // Issue segment, immediately after done.
   const issueW = total > 0 ? Math.round((issueCount / total) * barW) : 0;
   if (issueW > 0) {
     const issueX = barX + doneW;
-    ctx.fillStyle = "#ff4444";
+    ctx.fillStyle = COLOR_ISSUE;
     ctx.beginPath();
     if (doneW === 0) {
       // Issue starts at the left edge.
@@ -225,9 +226,9 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
 
   // Build modified SVG and load as image.
   const svgModified = modifySvg(svgRaw, state.done, state.issue);
-  const svgDataUrl =
-    "data:image/svg+xml;base64," +
-    btoa(unescape(encodeURIComponent(svgModified)));
+  const svgBytes = new TextEncoder().encode(svgModified);
+  const svgBinary = Array.from(svgBytes, (b) => String.fromCodePoint(b)).join("");
+  const svgDataUrl = "data:image/svg+xml;base64," + btoa(svgBinary);
   const svgImg = await loadImage(svgDataUrl);
 
   // Draw background, then SVG overlay at the same position/scale.
