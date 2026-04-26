@@ -111,8 +111,8 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   ctx.fillStyle = "#060b06";
   ctx.fillRect(0, 0, 1080, 1350);
 
-  const SIDE_PAD = 60;
-  const CONTENT_W = 960; // 1080 - 2*60
+  const SIDE_PAD = 24;
+  const CONTENT_W = 1032; // 1080 - 2*24
   const CENTER_X = 1080 / 2;
 
   // --- Computed stats ---
@@ -207,10 +207,10 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   ctx.fillText(legendParts.join("  "), CENTER_X, legendY);
 
   // --- 5. Map area ---
-  const MAP_W = 960;
-  const MAP_H = 800;
+  const MAP_W = 1032;
   const mapX = SIDE_PAD;
   const mapY = legendY + 40 + 26; // legend font-size ~26 + 40 gap
+  const MAP_H = canvas.height - mapY - 40; // fill remaining space, 40px bottom padding
 
   // Background PNG dimensions (map stage size).
   const ORIG_W = 1369;
@@ -253,12 +253,6 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
     Math.round(SVG_ORIG_H * scale),
   );
 
-  // --- 6. Footer ---
-  const footerY = mapY + MAP_H + 30;
-  ctx.fillStyle = "rgba(215,255,215,0.4)";
-  ctx.font = "20px sans-serif";
-  ctx.fillText("metal0k.github.io/sloboda_utils", CENTER_X, footerY);
-
   return canvas;
 }
 
@@ -266,7 +260,7 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
 // Blob builder
 // ---------------------------------------------------------------------------
 
-function buildImageBlob(state: State): Promise<Blob> {
+export function buildImageBlob(state: State): Promise<Blob> {
   return new Promise((resolve, reject) => {
     renderCanvas(state)
       .then((canvas) => {
@@ -284,7 +278,7 @@ function buildImageBlob(state: State): Promise<Blob> {
 // Delivery (Web Share API or download fallback)
 // ---------------------------------------------------------------------------
 
-async function deliverImage(blob: Blob, campaign: string): Promise<void> {
+export async function deliverImage(blob: Blob, campaign: string): Promise<void> {
   const date = new Date().toISOString().slice(0, 10);
   const file = new File([blob], `sloboda-${date}.png`, { type: "image/png" });
 

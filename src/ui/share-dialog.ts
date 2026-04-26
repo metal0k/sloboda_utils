@@ -5,7 +5,7 @@ import type { MdDialog } from "@material/web/dialog/dialog.js";
 
 import { getState } from "../state";
 import { encodeStateToHash } from "../url-state";
-import { shareImage } from "./share-image";
+import { buildImageBlob, deliverImage } from "./share-image";
 import { showToast } from "./sheet";
 
 // ---------- JSON export ----------
@@ -55,6 +55,7 @@ function ensureDialog(): MdDialog {
   // headline slot
   const headline = document.createElement("div");
   headline.setAttribute("slot", "headline");
+  headline.style.cssText = "width:100%;text-align:center;";
   headline.textContent = "Поделиться";
 
   // content slot
@@ -83,7 +84,9 @@ function ensureDialog(): MdDialog {
   imageBtn.addEventListener("click", async () => {
     dialog.close();
     try {
-      await shareImage(getState());
+      const state = getState();
+      const blob = await buildImageBlob(state);
+      showImagePreview(blob, state.campaign);
     } catch {
       showToast("Не удалось создать картинку", "err");
     }
@@ -121,4 +124,47 @@ function ensureDialog(): MdDialog {
 
 export function openShareDialog(): void {
   ensureDialog().show();
+}
+
+// ---------- image preview overlay ----------
+
+function showImagePreview(blob: Blob, campaign: string): void {
+  const url = URL.createObjectURL(blob);
+
+  const overlay = document.createElement("div");
+  overlay.className = "share-preview";
+
+  const img = document.createElement("img");
+  img.className = "share-preview__img";
+  img.src = url;
+  img.alt = "Предпросмотр";
+
+  const actions = document.createElement("div");
+  actions.className = "share-preview__actions";
+
+  const shareBtn = document.createElement("md-filled-button");
+  shareBtn.textContent = "Поделиться";
+  shareBtn.style.cssText = "--md-filled-button-leading-space:32px;--md-filled-button-trailing-space:32px;";
+  shareBtn.addEventListener("click", async () => {
+    await deliverImage(blob, campaign);
+    closePreview();
+  });
+
+  const closeBtn = document.createElement("md-text-button");
+  closeBtn.textContent = "Закрыть";
+  closeBtn.style.cssText = "--md-text-button-leading-space:24px;--md-text-button-trailing-space:24px;";
+  closeBtn.addEventListener("click", closePreview);
+
+  function closePreview(): void {
+    URL.revokeObjectURL(url);
+    overlay.remove();
+  }
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closePreview();
+  });
+
+  actions.append(shareBtn, closeBtn);
+  overlay.append(img, actions);
+  document.body.appendChild(overlay);
 }
