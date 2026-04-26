@@ -27,8 +27,8 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 
 function modifySvg(
   raw: string,
-  done: Set<string>,
-  issue: Set<string>,
+  done: ReadonlySet<string>,
+  issue: ReadonlySet<string>,
 ): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(raw, "image/svg+xml");
@@ -36,8 +36,8 @@ function modifySvg(
   // Inject status colour rules.
   const style = doc.createElementNS("http://www.w3.org/2000/svg", "style");
   style.textContent =
-    "text.is-done{fill:lawngreen}" +
-    "text.is-issue{fill:#ff3b3b}" +
+    "text.is-done{fill:#39ff14}" +
+    "text.is-issue{fill:#ff4444}" +
     "text.is-disabled{fill:#999;opacity:0.4}";
   doc.documentElement.prepend(style);
 
@@ -136,7 +136,7 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
 
   // --- 2. Stats line ---
   const statsY = finalTitleY + titleLineHeight + 20;
-  ctx.fillStyle = "lawngreen";
+  ctx.fillStyle = "#39ff14";
   ctx.font = "38px sans-serif";
   ctx.fillText(`${done} / ${total} · ${pct}%`, CENTER_X, statsY);
 
@@ -153,10 +153,10 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   ctx.roundRect(barX, barY, barW, barH, radius);
   ctx.fill();
 
-  // Done segment (lawngreen).
+  // Done segment (#39ff14).
   const doneW = total > 0 ? Math.round((done / total) * barW) : 0;
   if (doneW > 0) {
-    ctx.fillStyle = "lawngreen";
+    ctx.fillStyle = "#39ff14";
     ctx.beginPath();
     if (doneW >= barW) {
       ctx.roundRect(barX, barY, doneW, barH, radius);
@@ -167,11 +167,11 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
     ctx.fill();
   }
 
-  // Issue segment (#ff3b3b), immediately after done.
+  // Issue segment (#ff4444), immediately after done.
   const issueW = total > 0 ? Math.round((issueCount / total) * barW) : 0;
   if (issueW > 0) {
     const issueX = barX + doneW;
-    ctx.fillStyle = "#ff3b3b";
+    ctx.fillStyle = "#ff4444";
     ctx.beginPath();
     if (doneW === 0) {
       // Issue starts at the left edge.

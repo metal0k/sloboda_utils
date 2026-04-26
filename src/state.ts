@@ -7,6 +7,13 @@ export type HouseStatus = "done" | "issue";
 
 export type State = {
   campaign: string;
+  done: ReadonlySet<string>;
+  issue: ReadonlySet<string>;
+  updatedAt: number;
+};
+
+type MutableState = {
+  campaign: string;
   done: Set<string>;
   issue: Set<string>;
   updatedAt: number;
@@ -24,7 +31,7 @@ type Persisted = {
   updatedAt?: number;
 };
 
-function emptyState(): State {
+function emptyState(): MutableState {
   return {
     campaign: DEFAULT_CAMPAIGN,
     done: new Set<string>(),
@@ -45,7 +52,7 @@ function readPersisted(): Persisted | null {
   }
 }
 
-export function loadState(): State {
+export function loadState(): MutableState {
   const persisted = readPersisted();
   const s = emptyState();
   if (!persisted) return s;
@@ -68,8 +75,7 @@ export function loadState(): State {
   return s;
 }
 
-export function saveState(s: State): void {
-  s.updatedAt = Date.now();
+function saveState(s: MutableState): void {
   const payload: Persisted = {
     campaign: s.campaign,
     done: [...s.done],
@@ -86,11 +92,17 @@ export function saveState(s: State): void {
 
 // ---------------- singleton store ----------------
 
-let current: State = emptyState();
+let current: MutableState = emptyState();
 const listeners = new Set<Listener>();
 
 function emit(): void {
   for (const fn of listeners) fn(current);
+}
+
+function commitLocal(): void {
+  current.updatedAt = Date.now();
+  saveState(current);
+  emit();
 }
 
 /** Initialise the store from localStorage. Call once at startup. */
@@ -113,12 +125,16 @@ export function subscribe(listener: Listener): () => void {
  * Any previous status on that house is replaced.
  */
 export function setStatus(houseId: string, next: HouseStatus | null): void {
+  const inDone = current.done.has(houseId);
+  const inIssue = current.issue.has(houseId);
+  if (next === null && !inDone && !inIssue) return;
+  if (next === "done" && inDone && !inIssue) return;
+  if (next === "issue" && inIssue && !inDone) return;
   current.done.delete(houseId);
   current.issue.delete(houseId);
   if (next === "done") current.done.add(houseId);
   else if (next === "issue") current.issue.add(houseId);
-  saveState(current);
-  emit();
+  commitLocal();
 }
 
 /** Get the current status of a house, or `null` if neither set. */
@@ -133,22 +149,21 @@ export function setCampaign(name: string): void {
   if (trimmed.length === 0) return;
   if (trimmed === current.campaign) return;
   current.campaign = trimmed;
-  saveState(current);
-  emit();
+  commitLocal();
 }
 
 export function clearAll(): void {
+  if (current.done.size === 0 && current.issue.size === 0) return;
   current.done.clear();
   current.issue.clear();
-  saveState(current);
-  emit();
+  commitLocal();
 }
 
 /** Clears only the issue set (called when the «Красный список» option is turned off). */
 export function clearIssue(): void {
+  if (current.issue.size === 0) return;
   current.issue.clear();
-  saveState(current);
-  emit();
+  commitLocal();
 }
 
 /** Cycle empty → done → issue → empty. */
@@ -164,6 +179,7 @@ export function replaceState(s: State): void {
   current.campaign = s.campaign;
   current.done = new Set(s.done);
   current.issue = new Set(s.issue);
+  current.updatedAt = s.updatedAt;
   saveState(current);
   emit();
 }

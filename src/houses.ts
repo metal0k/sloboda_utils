@@ -59,10 +59,8 @@ export const HOUSES: ReadonlyArray<House> = HOUSE_IDS.map((id) => ({
   disabled: DISABLED_IDS.has(id),
 }));
 
-// Sanity counts. The legacy code hardcoded total = 67; we verify here.
-//
-// SVG contains 72 <text> nodes; 5 are listed as disabled
-// (_19, _7, _25, _18, _7_2). 72 - 5 = 67 active houses.
+// Sanity counts. _18 was re-enabled in commit 4289e5f, leaving 4 disabled
+// (_19, _7, _25, _7_2) and 68 active out of 72 SVG <text> nodes.
 export const ACTIVE_HOUSE_COUNT: number = HOUSES.filter(
   (h) => !h.disabled,
 ).length;

@@ -57,6 +57,7 @@ export function decodeHashToState(hash: string): State | null {
     const issue = bytesToSet(b64Dec(parts[2]));
     const updatedAt = parseInt(parts[3], 36);
     const campaign = new TextDecoder().decode(b64Dec(parts.slice(4).join(".")));
+    if (campaign.length > 256) return null;
     return { done, issue, updatedAt, campaign };
   } catch {
     return null;

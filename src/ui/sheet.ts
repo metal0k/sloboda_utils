@@ -1,15 +1,12 @@
 // Bottom-sheet (mobile) / sidebar (desktop): Share, Lists, Clear All, Import JSON.
 // Phase 3 rewrite — snapshot+commit pattern for Зелёный and Красный lists.
 
-import { isValidLabel, labelToHouseId, houseIdToLabel, ACTIVE_HOUSE_COUNT } from "../houses";
-import { clearAll, clearIssue, getState, replaceState, setStatus, subscribe } from "../state";
+import { isValidLabel, labelToHouseId, houseIdToLabel } from "../houses";
+import { clearAll, getState, replaceState, setStatus, subscribe } from "../state";
 import type { State } from "../state";
 import { encodeStateToHash } from "../url-state";
 import { getSettings, setRedListMode, subscribeSettings } from "../settings";
 import { shareImage } from "./share-image";  // Phase 4 creates this
-
-// Suppress unused-variable warning for ACTIVE_HOUSE_COUNT (may be used later)
-void ACTIVE_HOUSE_COUNT;
 
 // ---------- toast ----------
 
@@ -81,13 +78,13 @@ function naturalSort(a: string, b: string): number {
   return parse(a) - parse(b);
 }
 
-function snapshotToText(ids: Set<string>): string {
+function snapshotToText(ids: ReadonlySet<string>): string {
   return [...ids].map(houseIdToLabel).sort(naturalSort).join(", ");
 }
 
 function computeDiff(
   textarea: HTMLTextAreaElement,
-  currentSet: Set<string>,
+  currentSet: ReadonlySet<string>,
 ): { add: string[]; remove: string[] } {
   const newIds = new Set(parseBulk(textarea.value));
   const add = [...newIds].filter((id) => !currentSet.has(id));
@@ -320,7 +317,7 @@ export function initSheet(): { open: () => void; close: () => void } {
   redCheckbox.addEventListener("change", () => {
     const on = redCheckbox.checked;
     setRedListMode(on);
-    if (!on) clearIssue();
+    if (!on) showToast("Красный список скрыт");
     applyRedSectionVisibility(on);
   });
 
@@ -412,6 +409,7 @@ export function initSheet(): { open: () => void; close: () => void } {
 
   let unsubState: (() => void) | null = null;
   let unsubSettings: (() => void) | null = null;
+  let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
   function refreshSnapshots(): void {
     const state = getState();
@@ -432,6 +430,7 @@ export function initSheet(): { open: () => void; close: () => void } {
     resetClear();
     if (unsubState) { unsubState(); unsubState = null; }
     if (unsubSettings) { unsubSettings(); unsubSettings = null; }
+    if (keydownHandler) { document.removeEventListener("keydown", keydownHandler); keydownHandler = null; }
   }
 
   function open(): void {
@@ -448,15 +447,17 @@ export function initSheet(): { open: () => void; close: () => void } {
       applyRedSectionVisibility(s.redListMode);
     });
 
+    keydownHandler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") close();
+    };
+    document.addEventListener("keydown", keydownHandler);
+
     panel.classList.add("is-open");
     backdrop.classList.add("is-open");
   }
 
   backdrop.addEventListener("click", close);
   closeBtn.addEventListener("click", close);
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && panel.classList.contains("is-open")) close();
-  });
 
   return { open, close };
 }

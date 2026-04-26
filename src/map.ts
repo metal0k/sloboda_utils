@@ -3,7 +3,7 @@
 
 import { DISABLED_HOUSE_IDS, HOUSES } from "./houses";
 import { cycleStatus, getState, getStatus, setStatus, subscribe } from "./state";
-import { getSettings } from "./settings";
+import { getSettings, subscribeSettings } from "./settings";
 
 const CLASS_DONE = "is-done";
 const CLASS_ISSUE = "is-issue";
@@ -13,22 +13,19 @@ type HouseTexts = Map<string, SVGTextElement>;
 
 function collectHouseTexts(svg: SVGElement): HouseTexts {
   const map: HouseTexts = new Map();
-  for (const house of HOUSES) {
-    const el = svg.querySelector<SVGTextElement>(`#${cssEscape(house.id)}`);
-    if (el) map.set(house.id, el);
-  }
+  const wanted = new Set(HOUSES.map((h) => h.id));
+  svg.querySelectorAll<SVGTextElement>("text[id]").forEach((el) => {
+    if (wanted.has(el.id)) map.set(el.id, el);
+  });
   return map;
-}
-
-function cssEscape(id: string): string {
-  return id.replace(/([^a-zA-Z0-9_-])/g, "\\$1");
 }
 
 function paint(texts: HouseTexts): void {
   const { done, issue } = getState();
+  const { redListMode } = getSettings();
   for (const [id, el] of texts) {
     el.classList.toggle(CLASS_DONE, done.has(id));
-    el.classList.toggle(CLASS_ISSUE, issue.has(id));
+    el.classList.toggle(CLASS_ISSUE, redListMode && issue.has(id));
   }
 }
 
@@ -61,6 +58,7 @@ export function initMap(svg: SVGElement): () => void {
   });
 
   const unsubscribe = subscribe(() => paint(texts));
+  subscribeSettings(() => paint(texts));
   paint(texts);
   return unsubscribe;
 }

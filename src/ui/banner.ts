@@ -31,7 +31,7 @@ export function showImportBanner(
 
   const dismiss = () => {
     banner.remove();
-    history.replaceState(null, "", location.pathname);
+    history.replaceState(null, "", location.pathname + location.search);
   };
 
   banner.querySelector(".import-banner__accept")!.addEventListener("click", () => {

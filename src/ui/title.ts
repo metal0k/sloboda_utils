@@ -38,9 +38,11 @@ export function initTitle(host: HTMLElement): void {
   host.addEventListener("keydown", (e) => {
     if (e.key === "Enter") {
       e.preventDefault();
+      e.stopPropagation();
       host.blur();
     } else if (e.key === "Escape") {
       e.preventDefault();
+      e.stopPropagation();
       host.textContent = snapshot;
       host.blur();
     }
