@@ -2,7 +2,8 @@
 // store changes re-paint via CSS classes.
 
 import { DISABLED_HOUSE_IDS, HOUSES } from "./houses";
-import { cycleStatus, getState, setStatus, subscribe } from "./state";
+import { cycleStatus, getState, getStatus, setStatus, subscribe } from "./state";
+import { getSettings } from "./settings";
 
 const CLASS_DONE = "is-done";
 const CLASS_ISSUE = "is-issue";
@@ -48,10 +49,14 @@ export function initMap(svg: SVGElement): () => void {
     const id = textEl.id;
     if (!id || DISABLED_HOUSE_IDS.has(id) || !texts.has(id)) return;
 
-    if (e.ctrlKey || e.metaKey) {
-      setStatus(id, "issue");
+    const { redListMode } = getSettings();
+    if (redListMode) {
+      // Full cycle none→done→issue→none; Ctrl/Meta = shortcut to issue
+      if (e.ctrlKey || e.metaKey) setStatus(id, "issue");
+      else cycleStatus(id);
     } else {
-      cycleStatus(id);
+      // Simple toggle none↔done; Ctrl ignored
+      setStatus(id, getStatus(id) === "done" ? null : "done");
     }
   });
 

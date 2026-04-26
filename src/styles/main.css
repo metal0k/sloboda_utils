@@ -31,6 +31,22 @@
   --safe-right: env(safe-area-inset-right, 0px);
 }
 
+/* ===== Light theme ===== */
+:root[data-theme="light"] {
+  --bg: #f0f5f0;
+  --glass: rgba(240, 248, 240, 0.88);
+  --glass-hi: rgba(252, 255, 252, 0.95);
+  --glass-border: rgba(40, 140, 40, 0.22);
+
+  --color-text: rgba(10, 40, 10, 0.90);
+  --color-muted: rgba(40, 100, 40, 0.62);
+  --color-accent: rgba(0, 140, 0, 0.85);
+
+  --btn-bg: rgba(0, 140, 0, 0.09);
+  --btn-bg-hover: rgba(0, 140, 0, 0.17);
+  --btn-border: rgba(0, 140, 0, 0.30);
+}
+
 /* ===== Reset ===== */
 
 *,
@@ -562,4 +578,66 @@ body {
 .toast--err {
   border-color: rgba(255, 68, 68, 0.4);
   color: var(--color-issue);
+}
+
+/* ===== Sheet collapse ===== */
+.sheet-collapse-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: var(--btn-bg);
+  border: 1px solid var(--btn-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 600;
+  padding: 10px 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 140ms;
+}
+
+.sheet-collapse-header:hover {
+  background: var(--btn-bg-hover);
+}
+
+/* ===== List toggle row ===== */
+.sheet-toggle-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.sheet-toggle-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--color-done);
+}
+
+.sheet-toggle-row label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ===== Diff hint colors ===== */
+.sheet-hint--add { color: var(--color-done); }
+.sheet-hint--remove { color: var(--color-issue); }
+
+/* ===== Btn red primary ===== */
+.btn-danger-primary {
+  background: rgba(255, 68, 68, 0.18);
+  border-color: rgba(255, 68, 68, 0.45);
+  color: var(--color-issue);
+}
+
+.btn-danger-primary:hover {
+  background: rgba(255, 68, 68, 0.28);
 }

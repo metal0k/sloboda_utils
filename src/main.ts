@@ -16,6 +16,8 @@ import "./styles/main.css";
 import svgRaw from "../public/sloboda_house_numbers.svg?raw";
 
 import { replaceState, initState } from "./state";
+import { initSettings } from "./settings";
+import { applyInitialTheme, initTheme } from "./ui/theme";
 import { parseUrlHash } from "./url-state";
 import { initMap } from "./map";
 import { initStats } from "./ui/stats";
@@ -36,6 +38,7 @@ function el<K extends keyof HTMLElementTagNameMap>(
 function buildShell(): {
   titleHost: HTMLElement;
   statsHost: HTMLElement;
+  themeBtn: HTMLButtonElement;
   menuBtn: HTMLButtonElement;
   viewport: HTMLElement;
   stage: HTMLElement;
@@ -49,11 +52,14 @@ function buildShell(): {
 
   const titleHost = el("div", "toolbar__title");
   const statsHost = el("div", "toolbar__stats");
+  const themeBtn = el("button", "toolbar__theme btn-icon");
+  themeBtn.setAttribute("aria-label", "Переключить тему");
+
   const menuBtn = el("button", "toolbar__menu btn-icon");
   menuBtn.setAttribute("aria-label", "Открыть меню");
   menuBtn.innerHTML = `<span aria-hidden="true">☰</span>`;
 
-  toolbar.append(titleHost, statsHost, menuBtn);
+  toolbar.append(titleHost, statsHost, themeBtn, menuBtn);
 
   const viewport = el("div", "map-viewport");
   const stage = el("div", "map-stage");
@@ -70,19 +76,22 @@ function buildShell(): {
   viewport.append(stage);
   app.append(toolbar, viewport);
 
-  return { titleHost, statsHost, menuBtn, viewport, stage, svgHost };
+  return { titleHost, statsHost, themeBtn, menuBtn, viewport, stage, svgHost };
 }
 
 function main(): void {
+  initSettings();
+  applyInitialTheme();
   initState();
 
-  const { titleHost, statsHost, menuBtn, viewport, stage, svgHost } = buildShell();
+  const { titleHost, statsHost, themeBtn, menuBtn, viewport, stage, svgHost } = buildShell();
 
   const svg = svgHost.querySelector<SVGElement>("svg");
   if (!svg) throw new Error("SVG failed to inject");
 
   initTitle(titleHost);
   initStats(statsHost);
+  initTheme(themeBtn);
   initMap(svg);
   enablePanZoom(viewport, stage, { fitOnInit: true });
 

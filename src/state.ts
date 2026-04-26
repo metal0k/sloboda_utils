@@ -144,6 +144,13 @@ export function clearAll(): void {
   emit();
 }
 
+/** Clears only the issue set (called when the «Красный список» option is turned off). */
+export function clearIssue(): void {
+  current.issue.clear();
+  saveState(current);
+  emit();
+}
+
 /** Cycle empty → done → issue → empty. */
 export function cycleStatus(houseId: string): void {
   const s = getStatus(houseId);
