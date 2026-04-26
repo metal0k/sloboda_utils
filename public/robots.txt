@@ -1,0 +1,3 @@
+# Personal tool — please don't index.
+User-agent: *
+Disallow: /
