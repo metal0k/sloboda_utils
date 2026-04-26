@@ -45,6 +45,11 @@ GitHub Actions (`.github/workflows/deploy.yml`) triggers on push to `main`: `npm
 
 Live URL: **https://metal0k.github.io/sloboda_utils/**
 
+## Workflow
+
+- **Never commit or push without explicit user confirmation.** Complete the changes, run typecheck, then ask the user before running `git commit`.
+- **Use available agents and skills.** When a task matches a specialized agent (Explore, code-reviewer, voltagent-lang:typescript-pro, etc.) or a skill, invoke it — don't do the work inline.
+
 ## Key constraints
 
 - SVG house IDs follow the pattern `_N` or `_N_2` (e.g., `_1`, `_7_2`). CSS-escape dots/slashes when querying.

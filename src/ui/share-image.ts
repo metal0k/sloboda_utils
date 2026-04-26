@@ -6,6 +6,7 @@
 import type { State } from "../state";
 import { ACTIVE_HOUSE_COUNT } from "../houses";
 import { COLOR_DONE, COLOR_ISSUE } from "./colors";
+import { getSettings } from "../settings";
 
 import svgRaw from "../../public/sloboda_house_numbers.svg?raw";
 
@@ -30,6 +31,7 @@ function modifySvg(
   raw: string,
   done: ReadonlySet<string>,
   issue: ReadonlySet<string>,
+  showIssue: boolean,
 ): string {
   const parser = new DOMParser();
   const doc = parser.parseFromString(raw, "image/svg+xml");
@@ -42,14 +44,16 @@ function modifySvg(
     "text.is-disabled{fill:#999;opacity:0.4}";
   doc.documentElement.prepend(style);
 
-  // Apply classes to individual house text elements.
+  // Use classList.add to preserve existing cls-2 styling (font-size, family, weight).
   for (const id of done) {
     const el = doc.getElementById(id);
-    if (el) el.setAttribute("class", "is-done");
+    if (el) el.classList.add("is-done");
   }
-  for (const id of issue) {
-    const el = doc.getElementById(id);
-    if (el) el.setAttribute("class", "is-issue");
+  if (showIssue) {
+    for (const id of issue) {
+      const el = doc.getElementById(id);
+      if (el) el.classList.add("is-issue");
+    }
   }
 
   return new XMLSerializer().serializeToString(doc);
@@ -112,8 +116,9 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   const CENTER_X = 1080 / 2;
 
   // --- Computed stats ---
+  const showRedList = getSettings().redListMode;
   const done = state.done.size;
-  const issueCount = state.issue.size;
+  const issueCount = showRedList ? state.issue.size : 0;
   const total = ACTIVE_HOUSE_COUNT;
   const remaining = Math.max(0, total - done - issueCount);
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -196,11 +201,10 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   const legendY = barY + barH + 18;
   ctx.fillStyle = "rgba(215,255,215,0.6)";
   ctx.font = "26px sans-serif";
-  ctx.fillText(
-    `✅ ${done} готово  ❌ ${issueCount} отказов  ⬜ ${remaining} осталось`,
-    CENTER_X,
-    legendY,
-  );
+  const legendParts = [`✅ ${done} готово`];
+  if (showRedList) legendParts.push(`❌ ${issueCount} отказов`);
+  legendParts.push(`⬜ ${remaining} осталось`);
+  ctx.fillText(legendParts.join("  "), CENTER_X, legendY);
 
   // --- 5. Map area ---
   const MAP_W = 960;
@@ -208,7 +212,7 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   const mapX = SIDE_PAD;
   const mapY = legendY + 40 + 26; // legend font-size ~26 + 40 gap
 
-  // Original SVG/PNG dimensions.
+  // Background PNG dimensions (map stage size).
   const ORIG_W = 1369;
   const ORIG_H = 1465;
   const scale = Math.min(MAP_W / ORIG_W, MAP_H / ORIG_H); // ≈ 0.546
@@ -219,21 +223,35 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   const mapDrawX = mapX + Math.round((MAP_W - scaledW) / 2);
   const mapDrawY = mapY + Math.round((MAP_H - scaledH) / 2);
 
+  // SVG overlay is positioned at (318, 274) within the map stage via CSS
+  // (.map-stage__svg { left: 318px; top: 274px }) with intrinsic size 919×858.
+  // Apply the same scale factor and offset so numbers align with the PNG.
+  const SVG_OFFSET_X = 318;
+  const SVG_OFFSET_Y = 274;
+  const SVG_ORIG_W = 919;
+  const SVG_ORIG_H = 858;
+
   // Load background PNG.
   const bgImg = await loadImage(
     import.meta.env.BASE_URL + "sloboda_map_back.png",
   );
 
   // Build modified SVG and load as image.
-  const svgModified = modifySvg(svgRaw, state.done, state.issue);
+  const svgModified = modifySvg(svgRaw, state.done, state.issue, showRedList);
   const svgBytes = new TextEncoder().encode(svgModified);
   const svgBinary = Array.from(svgBytes, (b) => String.fromCodePoint(b)).join("");
   const svgDataUrl = "data:image/svg+xml;base64," + btoa(svgBinary);
   const svgImg = await loadImage(svgDataUrl);
 
-  // Draw background, then SVG overlay at the same position/scale.
+  // Draw background, then SVG overlay at the correct position/scale.
   ctx.drawImage(bgImg, mapDrawX, mapDrawY, scaledW, scaledH);
-  ctx.drawImage(svgImg, mapDrawX, mapDrawY, scaledW, scaledH);
+  ctx.drawImage(
+    svgImg,
+    mapDrawX + Math.round(SVG_OFFSET_X * scale),
+    mapDrawY + Math.round(SVG_OFFSET_Y * scale),
+    Math.round(SVG_ORIG_W * scale),
+    Math.round(SVG_ORIG_H * scale),
+  );
 
   // --- 6. Footer ---
   const footerY = mapY + MAP_H + 30;

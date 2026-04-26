@@ -652,6 +652,11 @@ html, body {
   font-size: 20px;
 }
 
+/* Restore md-dialog centering overridden by the * { margin: 0 } reset. */
+md-dialog {
+  margin: auto;
+}
+
 /* ===== md-* component token overrides ===== */
 
 /* FAB: use primary green */
