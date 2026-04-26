@@ -4,6 +4,7 @@
 import { DISABLED_HOUSE_IDS, HOUSES } from "./houses";
 import { cycleStatus, getState, getStatus, setStatus, subscribe } from "./state";
 import { getSettings, subscribeSettings } from "./settings";
+import type { PanZoomController } from "./ui/gestures";
 
 const CLASS_DONE = "is-done";
 const CLASS_ISSUE = "is-issue";
@@ -30,13 +31,23 @@ function paint(texts: HouseTexts): void {
 }
 
 /** Initialise click handling and re-render hooks for the given SVG. */
-export function initMap(svg: SVGElement): () => void {
+export function initMap(svg: SVGElement, panZoom: PanZoomController): () => void {
   const texts = collectHouseTexts(svg);
 
   for (const id of DISABLED_HOUSE_IDS) {
     const el = texts.get(id);
     if (el) el.classList.add(CLASS_DISABLED);
   }
+
+  const DOUBLE_DELAY_MS = 250;
+  let pendingClickTimer: number | null = null;
+
+  const clearPendingClick = (): void => {
+    if (pendingClickTimer !== null) {
+      clearTimeout(pendingClickTimer);
+      pendingClickTimer = null;
+    }
+  };
 
   svg.addEventListener("click", (e) => {
     const target = e.target as Element | null;
@@ -46,15 +57,23 @@ export function initMap(svg: SVGElement): () => void {
     const id = textEl.id;
     if (!id || DISABLED_HOUSE_IDS.has(id) || !texts.has(id)) return;
 
-    const { redListMode } = getSettings();
-    if (redListMode) {
-      // Full cycle none→done→issue→none; Ctrl/Meta = shortcut to issue
-      if (e.ctrlKey || e.metaKey) setStatus(id, "issue");
-      else cycleStatus(id);
-    } else {
-      // Simple toggle none↔done; Ctrl ignored
-      setStatus(id, getStatus(id) === "done" ? null : "done");
-    }
+    const isCtrl = e.ctrlKey || e.metaKey;
+    clearPendingClick();
+    pendingClickTimer = window.setTimeout(() => {
+      pendingClickTimer = null;
+      const { redListMode } = getSettings();
+      if (redListMode) {
+        if (isCtrl) setStatus(id, "issue");
+        else cycleStatus(id);
+      } else {
+        setStatus(id, getStatus(id) === "done" ? null : "done");
+      }
+    }, DOUBLE_DELAY_MS);
+  });
+
+  svg.addEventListener("dblclick", (e) => {
+    clearPendingClick();
+    panZoom.toggleZoomAt(e.clientX, e.clientY);
   });
 
   const unsubscribe = subscribe(() => paint(texts));

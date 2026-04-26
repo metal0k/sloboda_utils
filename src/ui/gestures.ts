@@ -7,13 +7,15 @@
 // fire on the SVG <text>; only past `DRAG_THRESHOLD_PX` do we capture and
 // suppress the synthetic click.
 
-const MIN_SCALE = 0.15;
 const MAX_SCALE = 6;
 const DRAG_THRESHOLD_PX = 5;
 const WHEEL_ZOOM_STEP = 0.0015;
 const TRACKPAD_ZOOM_STEP = 0.01;
 const ZOOM_BUTTON_FACTOR = 1.25;
 const SAVE_DEBOUNCE_MS = 400;
+const RUBBER_FACTOR = 0.3;
+const SPRING_BACK_MS = 220;
+const DOUBLE_TAP_ZOOM_FACTOR = 2.5;
 
 type Transform = { x: number; y: number; scale: number };
 
@@ -29,6 +31,7 @@ export interface PanZoomController {
   zoomIn(): void;
   zoomOut(): void;
   resetZoom(): void;
+  toggleZoomAt(clientX: number, clientY: number): void;
 }
 
 export function enablePanZoom(
@@ -50,15 +53,41 @@ export function enablePanZoom(
 
   container.style.touchAction = "none";
 
-  const apply = (): void => {
-    target.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
-  };
-  apply();
-
   // ---------- helpers ----------
 
+  const computeMinScale = (): number => {
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    const tw = target.offsetWidth;
+    const th = target.offsetHeight;
+    if (tw === 0 || th === 0) return 0.15;
+    return Math.min(cw / tw, ch / th);
+  };
+
   const clampScale = (s: number): number =>
-    Math.max(MIN_SCALE, Math.min(MAX_SCALE, s));
+    Math.max(computeMinScale(), Math.min(MAX_SCALE, s));
+
+  const clampPosition = (scale: number, x: number, y: number): { x: number; y: number } => {
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    const tw = target.offsetWidth * scale;
+    const th = target.offsetHeight * scale;
+    const cx = tw > cw ? Math.min(0, Math.max(cw - tw, x)) : (cw - tw) / 2;
+    const cy = th > ch ? Math.min(0, Math.max(ch - th, y)) : (ch - th) / 2;
+    return { x: cx, y: cy };
+  };
+
+  const applyRaw = (): void => {
+    target.style.transform = `translate(${t.x}px, ${t.y}px) scale(${t.scale})`;
+  };
+
+  const apply = (): void => {
+    const { x, y } = clampPosition(t.scale, t.x, t.y);
+    t.x = x;
+    t.y = y;
+    applyRaw();
+  };
+  apply();
 
   const scheduleSave = (): void => {
     if (!options.onTransformChange) return;
@@ -85,9 +114,23 @@ export function enablePanZoom(
     scheduleSave();
   };
 
+  // ---------- fit helpers ----------
+
+  const computeFitTransform = (): Transform => {
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    const tw = target.offsetWidth;
+    const th = target.offsetHeight;
+    if (tw === 0 || th === 0) return { x: 0, y: 0, scale: 1 };
+    const s = clampScale(Math.min(cw / tw, ch / th));
+    return { x: (cw - tw * s) / 2, y: (ch - th * s) / 2, scale: s };
+  };
+
   // ---------- pointer events ----------
 
   container.addEventListener("pointerdown", (e) => {
+    // Kill any active spring-back transition so new drag starts clean.
+    target.style.transition = "";
     pointers.set(e.pointerId, {
       id: e.pointerId,
       startX: e.clientX,
@@ -128,9 +171,15 @@ export function enablePanZoom(
           // ignore — capture is best-effort
         }
       }
-      t.x += dx;
-      t.y += dy;
-      apply();
+      // Rubber-band: allow over-drag with resistance instead of hard-clamp.
+      const targetX = t.x + dx;
+      const targetY = t.y + dy;
+      const clamped = clampPosition(t.scale, targetX, targetY);
+      const overX = targetX - clamped.x;
+      const overY = targetY - clamped.y;
+      t.x = clamped.x + overX * RUBBER_FACTOR;
+      t.y = clamped.y + overY * RUBBER_FACTOR;
+      applyRaw();
     } else if (pointers.size === 2) {
       const [a, b] = [...pointers.values()];
       const dist = Math.hypot(a.x - b.x, a.y - b.y);
@@ -158,6 +207,19 @@ export function enablePanZoom(
     if (didDrag) {
       suppressNextClick = true;
       didDrag = false;
+      // Spring back to clamped position if we over-dragged.
+      const clamped = clampPosition(t.scale, t.x, t.y);
+      if (clamped.x !== t.x || clamped.y !== t.y) {
+        target.style.transition = `transform ${SPRING_BACK_MS}ms cubic-bezier(0.2,0,0,1)`;
+        t.x = clamped.x;
+        t.y = clamped.y;
+        applyRaw();
+        const cleanup = (): void => {
+          target.style.transition = "";
+          target.removeEventListener("transitionend", cleanup);
+        };
+        target.addEventListener("transitionend", cleanup);
+      }
       scheduleSave();
     }
     if (container.hasPointerCapture(e.pointerId)) {
@@ -203,20 +265,6 @@ export function enablePanZoom(
     { passive: false },
   );
 
-  // ---------- fit helpers ----------
-
-  const computeFitTransform = (): Transform => {
-    const cw = container.clientWidth;
-    const ch = container.clientHeight;
-    const tw = target.offsetWidth;
-    const th = target.offsetHeight;
-    if (tw === 0 || th === 0) return { x: 0, y: 0, scale: 1 };
-    // Fit-to-longest-side: portrait → fill height, landscape → fill width.
-    const isPortrait = cw < ch;
-    const s = clampScale(isPortrait ? ch / th : cw / tw);
-    return { x: (cw - tw * s) / 2, y: (ch - th * s) / 2, scale: s };
-  };
-
   // ---------- init ----------
 
   if (options.fitOnInit) {
@@ -242,6 +290,33 @@ export function enablePanZoom(
     });
   }
 
+  // ---------- resize: keep scale, anchor visual center ----------
+
+  let prevCw = container.clientWidth;
+  let prevCh = container.clientHeight;
+  const ro = new ResizeObserver(() => {
+    const cw = container.clientWidth;
+    const ch = container.clientHeight;
+    if (target.offsetWidth === 0 || target.offsetHeight === 0) return;
+    if (prevCw === 0 || prevCh === 0) {
+      prevCw = cw;
+      prevCh = ch;
+      return;
+    }
+    if (cw === prevCw && ch === prevCh) return;
+    // Compute world point that was at the center before resize.
+    const worldX = (prevCw / 2 - t.x) / t.scale;
+    const worldY = (prevCh / 2 - t.y) / t.scale;
+    t.scale = clampScale(t.scale);
+    t.x = cw / 2 - worldX * t.scale;
+    t.y = ch / 2 - worldY * t.scale;
+    apply();
+    scheduleSave();
+    prevCw = cw;
+    prevCh = ch;
+  });
+  ro.observe(container);
+
   // ---------- controller ----------
 
   const centerOf = (): { cx: number; cy: number } => ({
@@ -259,14 +334,29 @@ export function enablePanZoom(
       zoomAt(cx, cy, 1 / ZOOM_BUTTON_FACTOR);
     },
     resetZoom() {
-      requestAnimationFrame(() => {
+      const fit = computeFitTransform();
+      t.x = fit.x;
+      t.y = fit.y;
+      t.scale = fit.scale;
+      apply();
+      scheduleSave();
+    },
+    toggleZoomAt(clientX: number, clientY: number) {
+      const rect = container.getBoundingClientRect();
+      const cx = clientX - rect.left;
+      const cy = clientY - rect.top;
+      const minS = computeMinScale();
+      const isAtFit = Math.abs(t.scale - minS) < 0.01;
+      if (isAtFit) {
+        zoomAt(cx, cy, DOUBLE_TAP_ZOOM_FACTOR);
+      } else {
         const fit = computeFitTransform();
         t.x = fit.x;
         t.y = fit.y;
         t.scale = fit.scale;
         apply();
         scheduleSave();
-      });
+      }
     },
   };
 }

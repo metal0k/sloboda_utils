@@ -136,7 +136,7 @@ function buildZoomControls(viewport: HTMLElement, onZoomIn: () => void, onZoomOu
 
   const btnReset = el("button", "zoom-btn zoom-btn--label");
   btnReset.setAttribute("aria-label", "Вписать карту");
-  btnReset.textContent = "Fit";
+  btnReset.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true">crop_free</span><span class="zoom-btn__text">1:1</span>`;
   btnReset.addEventListener("click", onReset);
 
   const btnIn = el("button", "zoom-btn");
@@ -161,14 +161,14 @@ function main(): void {
   initTitle(titleHost);
   initStats(statsHost);
   initTheme(themeBtn);
-  initMap(svg);
-
   const savedZoom = loadSavedZoom();
   const panZoom = enablePanZoom(viewport, stage, {
     fitOnInit: true,
     initialTransform: savedZoom,
     onTransformChange: saveZoom,
   });
+
+  initMap(svg, panZoom);
 
   buildZoomControls(
     viewport,

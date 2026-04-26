@@ -686,7 +686,17 @@ md-dialog [slot="headline"] {
 }
 
 .zoom-btn--label {
-  font-size: 0.72rem;
+  flex-direction: column;
+  gap: 0;
+  font-size: 0.62rem;
+  line-height: 1;
+}
+.zoom-btn--label .material-symbols-outlined {
+  font-size: 16px;
+}
+.zoom-btn__text {
+  font-weight: 600;
+  letter-spacing: 0.02em;
 }
 
 .zoom-btn:hover  { background: var(--md-sys-color-surface-container-highest); }
