@@ -197,7 +197,7 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   ctx.fillStyle = "rgba(215,255,215,0.6)";
   ctx.font = "26px sans-serif";
   ctx.fillText(
-    `✅ ${done} готово  ❌ ${issueCount} відмов  ⬜ ${remaining} залишилось`,
+    `✅ ${done} готово  ❌ ${issueCount} отказов  ⬜ ${remaining} осталось`,
     CENTER_X,
     legendY,
   );
