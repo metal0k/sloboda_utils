@@ -3,7 +3,7 @@
 // DOM layout:
 //   #app
 //     .toolbar
-//       .toolbar__title   (editable campaign name)
+//       .toolbar__title   (project switcher dropdown + inline rename)
 //       .toolbar__stats   (done / total · pct%)
 //       .toolbar__menu    (hamburger → opens sheet)
 //     .map-viewport
@@ -26,7 +26,7 @@ import "@material/web/icon/icon.js";
 
 import svgRaw from "../public/sloboda_house_numbers.svg?raw";
 
-import { replaceState, initState } from "./state";
+import { getActiveProject, initState, subscribe } from "./state";
 import { initSettings } from "./settings";
 import { applyInitialTheme, initTheme } from "./ui/theme";
 import { parseUrlHash } from "./url-state";
@@ -39,14 +39,50 @@ import { showImportBanner } from "./ui/banner";
 import { initFab } from "./ui/fab";
 import { openShareDialog } from "./ui/share-dialog";
 
-// ---------- localStorage zoom persistence ----------
+// ---------- per-project zoom persistence ----------
 
-const ZOOM_KEY = "slobodaZoom/v1";
+const ZOOM_KEY = "slobodaZoom/v2";
 
-function loadSavedZoom(): { x: number; y: number; scale: number } | null {
+type ZoomTransform = { x: number; y: number; scale: number };
+
+function loadAllZoom(): Record<string, ZoomTransform> {
   try {
     const raw = localStorage.getItem(ZOOM_KEY);
-    if (!raw) return null;
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as unknown;
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return parsed as Record<string, ZoomTransform>;
+    }
+  } catch {
+    // ignore malformed data
+  }
+  return {};
+}
+
+function loadProjectZoom(projectId: string): ZoomTransform | null {
+  const all = loadAllZoom();
+  const t = all[projectId];
+  if (t && typeof t.x === "number" && typeof t.y === "number" && typeof t.scale === "number") {
+    return t;
+  }
+  return null;
+}
+
+function saveZoom(projectId: string, t: ZoomTransform): void {
+  try {
+    const all = loadAllZoom();
+    all[projectId] = t;
+    localStorage.setItem(ZOOM_KEY, JSON.stringify(all));
+  } catch {
+    // ignore (private browsing quota)
+  }
+}
+
+// One-shot migration from slobodaZoom/v1 (single-project) to v2 (keyed by projectId).
+function migrateZoomV1(projectId: string): void {
+  try {
+    const raw = localStorage.getItem("slobodaZoom/v1");
+    if (!raw) return;
     const parsed = JSON.parse(raw) as unknown;
     if (
       parsed &&
@@ -55,19 +91,11 @@ function loadSavedZoom(): { x: number; y: number; scale: number } | null {
       "y" in parsed &&
       "scale" in parsed
     ) {
-      return parsed as { x: number; y: number; scale: number };
+      saveZoom(projectId, parsed as ZoomTransform);
     }
+    localStorage.removeItem("slobodaZoom/v1");
   } catch {
-    // ignore malformed data
-  }
-  return null;
-}
-
-function saveZoom(t: { x: number; y: number; scale: number }): void {
-  try {
-    localStorage.setItem(ZOOM_KEY, JSON.stringify(t));
-  } catch {
-    // ignore (private browsing quota)
+    // ignore
   }
 }
 
@@ -153,6 +181,9 @@ function main(): void {
   applyInitialTheme();
   initState();
 
+  // Migrate zoom from v1 (single key) to v2 (keyed by project id).
+  migrateZoomV1(getActiveProject().id);
+
   const { titleHost, statsHost, themeBtn, menuBtn, viewport, stage, svgHost } = buildShell();
 
   const svg = svgHost.querySelector<SVGElement>("svg");
@@ -161,11 +192,12 @@ function main(): void {
   initTitle(titleHost);
   initStats(statsHost);
   initTheme(themeBtn);
-  const savedZoom = loadSavedZoom();
+
+  const initialZoom = loadProjectZoom(getActiveProject().id);
   const panZoom = enablePanZoom(viewport, stage, {
     fitOnInit: true,
-    initialTransform: savedZoom,
-    onTransformChange: saveZoom,
+    initialTransform: initialZoom,
+    onTransformChange: (t) => saveZoom(getActiveProject().id, t),
   });
 
   initMap(svg, panZoom);
@@ -182,12 +214,20 @@ function main(): void {
 
   initFab(openShareDialog);
 
+  // Restore zoom when the active project changes.
+  let lastProjectId = getActiveProject().id;
+  subscribe(() => {
+    const newId = getActiveProject().id;
+    if (newId !== lastProjectId) {
+      lastProjectId = newId;
+      panZoom.setTransform(loadProjectZoom(newId));
+    }
+  });
+
   // Cross-device import: check if the URL carries a #s= hash.
   const incoming = parseUrlHash();
   if (incoming) {
-    showImportBanner(incoming, () => {
-      replaceState(incoming);
-    });
+    showImportBanner(incoming);
   }
 }
 

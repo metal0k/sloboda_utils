@@ -5,9 +5,17 @@ import type { MdSwitch } from "@material/web/switch/switch.js";
 import type { MdFilledButton } from "@material/web/button/filled-button.js";
 
 import { isValidLabel, labelToHouseId, houseIdToLabel } from "../houses";
-import { clearAll, getState, replaceState, setStatus, subscribe } from "../state";
-import type { State } from "../state";
-import { getSettings, setRedListMode, subscribeSettings } from "../settings";
+import {
+  clearAll,
+  getActiveProject,
+  getState,
+  newProjectId,
+  replaceAllProjects,
+  setRedListMode,
+  setStatus,
+  subscribe,
+} from "../state";
+import type { Project, State } from "../state";
 
 // ---------- toast ----------
 
@@ -24,28 +32,51 @@ export function showToast(msg: string, type: "ok" | "err" = "ok"): void {
   }, 3000);
 }
 
-// ---------- JSON deserialisation ----------
+// ---------- JSON import parsing (v2 and v3) ----------
 
-type PersistedJson = {
-  version: number;
-  campaign: string;
-  done: string[];
-  issue: string[];
-  updatedAt: number;
-};
-
-function jsonToState(json: string): State | null {
+function parseImportJson(json: string): State | null {
   try {
-    const raw = JSON.parse(json) as PersistedJson;
+    const raw = JSON.parse(json) as Record<string, unknown>;
     if (!raw || typeof raw !== "object") return null;
-    return {
-      campaign: typeof raw.campaign === "string" ? raw.campaign : "Кампания",
-      done: new Set(Array.isArray(raw.done) ? raw.done.filter((v) => typeof v === "string") : []),
-      issue: new Set(
-        Array.isArray(raw.issue) ? raw.issue.filter((v) => typeof v === "string") : [],
-      ),
-      updatedAt: typeof raw.updatedAt === "number" ? raw.updatedAt : Date.now(),
-    };
+
+    if (raw["version"] === 3 && Array.isArray(raw["projects"]) && (raw["projects"] as unknown[]).length > 0) {
+      const projects = (raw["projects"] as unknown[]).map((item) => {
+        const p = item as Record<string, unknown>;
+        return {
+          id: typeof p["id"] === "string" && p["id"].length > 0 ? p["id"] : newProjectId(),
+          name: typeof p["name"] === "string" && (p["name"] as string).trim().length > 0
+            ? (p["name"] as string).trim()
+            : "Проект",
+          done: new Set(Array.isArray(p["done"]) ? (p["done"] as unknown[]).filter((v): v is string => typeof v === "string") : []),
+          issue: new Set(Array.isArray(p["issue"]) ? (p["issue"] as unknown[]).filter((v): v is string => typeof v === "string") : []),
+          redListMode: typeof p["redListMode"] === "boolean" ? p["redListMode"] : false,
+          updatedAt: typeof p["updatedAt"] === "number" ? p["updatedAt"] : Date.now(),
+        } as Project;
+      });
+      const rawActiveId = raw["activeProjectId"];
+      const activeProjectId = typeof rawActiveId === "string" && projects.some((p) => p.id === rawActiveId)
+        ? rawActiveId
+        : projects[0].id;
+      return { projects, activeProjectId };
+    }
+
+    if (raw["version"] === 2 || (raw["campaign"] !== undefined && !raw["projects"])) {
+      // Legacy single-project export
+      const id = newProjectId();
+      const project: Project = {
+        id,
+        name: typeof raw["campaign"] === "string" && (raw["campaign"] as string).trim().length > 0
+          ? (raw["campaign"] as string).trim()
+          : "Импорт",
+        done: new Set(Array.isArray(raw["done"]) ? (raw["done"] as unknown[]).filter((v): v is string => typeof v === "string") : []),
+        issue: new Set(Array.isArray(raw["issue"]) ? (raw["issue"] as unknown[]).filter((v): v is string => typeof v === "string") : []),
+        redListMode: false,
+        updatedAt: typeof raw["updatedAt"] === "number" ? raw["updatedAt"] : Date.now(),
+      };
+      return { projects: [project], activeProjectId: id };
+    }
+
+    return null;
   } catch {
     return null;
   }
@@ -164,16 +195,16 @@ export function initSheet(): { open: () => void; close: () => void } {
   greenApplyBtn.disabled = true;
 
   greenArea.addEventListener("input", () => {
-    const { add, remove } = computeDiff(greenArea, getState().done);
+    const { add, remove } = computeDiff(greenArea, getActiveProject().done);
     renderDiffHint(greenHint, add, remove);
     greenApplyBtn.disabled = add.length === 0 && remove.length === 0;
   });
 
   greenApplyBtn.addEventListener("click", () => {
-    const { add, remove } = computeDiff(greenArea, getState().done);
+    const { add, remove } = computeDiff(greenArea, getActiveProject().done);
     for (const id of add) setStatus(id, "done");
     for (const id of remove) {
-      if (getState().done.has(id)) setStatus(id, null);
+      if (getActiveProject().done.has(id)) setStatus(id, null);
     }
     showToast("Зелёный список обновлён");
     close();
@@ -212,16 +243,16 @@ export function initSheet(): { open: () => void; close: () => void } {
   redApplyBtn.disabled = true;
 
   redArea.addEventListener("input", () => {
-    const { add, remove } = computeDiff(redArea, getState().issue);
+    const { add, remove } = computeDiff(redArea, getActiveProject().issue);
     renderDiffHint(redHint, add, remove);
     redApplyBtn.disabled = add.length === 0 && remove.length === 0;
   });
 
   redApplyBtn.addEventListener("click", () => {
-    const { add, remove } = computeDiff(redArea, getState().issue);
+    const { add, remove } = computeDiff(redArea, getActiveProject().issue);
     for (const id of add) setStatus(id, "issue");
     for (const id of remove) {
-      if (getState().issue.has(id)) setStatus(id, null);
+      if (getActiveProject().issue.has(id)) setStatus(id, null);
     }
     showToast("Красный список обновлён");
     close();
@@ -229,7 +260,8 @@ export function initSheet(): { open: () => void; close: () => void } {
 
   redSection.append(redArea, redHint, redApplyBtn);
 
-  function applyRedSectionVisibility(on: boolean): void {
+  function syncRedSection(): void {
+    const on = getActiveProject().redListMode;
     redSection.hidden = !on;
     redSwitch.selected = on;
   }
@@ -238,7 +270,6 @@ export function initSheet(): { open: () => void; close: () => void } {
     const on = redSwitch.selected;
     setRedListMode(on);
     if (!on) showToast("Красный список скрыт");
-    applyRedSectionVisibility(on);
   });
 
   // ===== Очистить всё =====
@@ -276,11 +307,46 @@ export function initSheet(): { open: () => void; close: () => void } {
     }
   }
 
-  // ===== Импорт JSON (bottom, de-emphasized) =====
+  // ===== Импорт JSON =====
+
+  // Pending parsed state waiting for confirmation.
+  let pendingImport: State | null = null;
 
   const importBtn = document.createElement("md-outlined-button");
   importBtn.style.width = "100%";
   importBtn.textContent = "Импорт из JSON";
+
+  const importConfirmRow = document.createElement("div");
+  importConfirmRow.className = "sheet-import-confirm";
+  importConfirmRow.hidden = true;
+
+  const importConfirmText = document.createElement("span");
+  importConfirmText.className = "sheet-import-confirm__text";
+
+  const importConfirmYes = document.createElement("md-filled-button") as MdFilledButton;
+  importConfirmYes.className = "btn-md-primary";
+  importConfirmYes.textContent = "Заменить всё";
+
+  const importConfirmNo = document.createElement("md-text-button");
+  importConfirmNo.textContent = "Отмена";
+
+  importConfirmRow.append(importConfirmText, importConfirmYes, importConfirmNo);
+
+  importConfirmYes.addEventListener("click", () => {
+    if (!pendingImport) return;
+    replaceAllProjects(pendingImport);
+    pendingImport = null;
+    importConfirmRow.hidden = true;
+    importBtn.hidden = false;
+    showToast("Состояние импортировано");
+    close();
+  });
+
+  importConfirmNo.addEventListener("click", () => {
+    pendingImport = null;
+    importConfirmRow.hidden = true;
+    importBtn.hidden = false;
+  });
 
   const fileInput = document.createElement("input");
   fileInput.type = "file";
@@ -292,14 +358,16 @@ export function initSheet(): { open: () => void; close: () => void } {
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      const state = jsonToState(reader.result as string);
-      if (!state) {
+      const importData = parseImportJson(reader.result as string);
+      if (!importData) {
         showToast("Не удалось прочитать файл", "err");
         return;
       }
-      replaceState(state);
-      showToast("Состояние импортировано");
-      close();
+      const n = importData.projects.length;
+      importConfirmText.textContent = `Заменить все проекты? Будет загружено: ${n} проект(ов).`;
+      pendingImport = importData;
+      importBtn.hidden = true;
+      importConfirmRow.hidden = false;
     };
     reader.readAsText(file);
     fileInput.value = "";
@@ -329,6 +397,7 @@ export function initSheet(): { open: () => void; close: () => void } {
     clearBtn,
     divider(),
     importBtn,
+    importConfirmRow,
     fileInput,
     versionRow,
   );
@@ -375,17 +444,16 @@ export function initSheet(): { open: () => void; close: () => void } {
   // ===== Subscriptions =====
 
   let unsubState: (() => void) | null = null;
-  let unsubSettings: (() => void) | null = null;
   let keydownHandler: ((e: KeyboardEvent) => void) | null = null;
 
   function refreshSnapshots(): void {
-    const state = getState();
-    greenArea.value = snapshotToText(state.done);
+    const project = getActiveProject();
+    greenArea.value = snapshotToText(project.done);
     greenHint.textContent = "";
     greenApplyBtn.disabled = true;
 
     if (!redSection.hidden) {
-      redArea.value = snapshotToText(state.issue);
+      redArea.value = snapshotToText(project.issue);
       redHint.textContent = "";
       redApplyBtn.disabled = true;
     }
@@ -396,19 +464,21 @@ export function initSheet(): { open: () => void; close: () => void } {
     backdrop.classList.remove("is-open");
     panel.style.transform = "";
     resetClear();
+    // Reset pending import if sheet is closed without confirming.
+    pendingImport = null;
+    importConfirmRow.hidden = true;
+    importBtn.hidden = false;
     if (unsubState) { unsubState(); unsubState = null; }
-    if (unsubSettings) { unsubSettings(); unsubSettings = null; }
     if (keydownHandler) { document.removeEventListener("keydown", keydownHandler); keydownHandler = null; }
   }
 
   function open(): void {
-    const settings = getSettings();
-    applyRedSectionVisibility(settings.redListMode);
+    syncRedSection();
     refreshSnapshots();
 
-    unsubState = subscribe(() => refreshSnapshots());
-    unsubSettings = subscribeSettings((s) => {
-      applyRedSectionVisibility(s.redListMode);
+    unsubState = subscribe(() => {
+      syncRedSection();
+      refreshSnapshots();
     });
 
     keydownHandler = (e: KeyboardEvent) => {
@@ -423,6 +493,9 @@ export function initSheet(): { open: () => void; close: () => void } {
 
   backdrop.addEventListener("click", close);
   closeBtn.addEventListener("click", close);
+
+  // Expose getState for use by other modules (avoids re-exporting from here).
+  void getState;
 
   return { open, close };
 }

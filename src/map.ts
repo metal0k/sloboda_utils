@@ -2,8 +2,7 @@
 // store changes re-paint via CSS classes.
 
 import { DISABLED_HOUSE_IDS, HOUSES } from "./houses";
-import { cycleStatus, getState, getStatus, setStatus, subscribe } from "./state";
-import { getSettings, subscribeSettings } from "./settings";
+import { cycleStatus, getActiveProject, getStatus, setStatus, subscribe } from "./state";
 import type { PanZoomController } from "./ui/gestures";
 
 const CLASS_DONE = "is-done";
@@ -22,8 +21,7 @@ function collectHouseTexts(svg: SVGElement): HouseTexts {
 }
 
 function paint(texts: HouseTexts): void {
-  const { done, issue } = getState();
-  const { redListMode } = getSettings();
+  const { done, issue, redListMode } = getActiveProject();
   for (const [id, el] of texts) {
     el.classList.toggle(CLASS_DONE, done.has(id));
     el.classList.toggle(CLASS_ISSUE, redListMode && issue.has(id));
@@ -61,7 +59,7 @@ export function initMap(svg: SVGElement, panZoom: PanZoomController): () => void
     clearPendingClick();
     pendingClickTimer = window.setTimeout(() => {
       pendingClickTimer = null;
-      const { redListMode } = getSettings();
+      const { redListMode } = getActiveProject();
       if (redListMode) {
         if (isCtrl) setStatus(id, "issue");
         else cycleStatus(id);
@@ -77,7 +75,6 @@ export function initMap(svg: SVGElement, panZoom: PanZoomController): () => void
   });
 
   const unsubscribe = subscribe(() => paint(texts));
-  subscribeSettings(() => paint(texts));
   paint(texts);
   return unsubscribe;
 }

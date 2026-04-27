@@ -3,10 +3,9 @@
 // Exposes shareImage(state) which builds the card and delivers it via Web Share
 // API or falls back to a download.
 
-import type { State } from "../state";
+import type { Project } from "../state";
 import { ACTIVE_HOUSE_COUNT, DISABLED_HOUSE_IDS } from "../houses";
 import { COLOR_DONE, COLOR_ISSUE } from "./colors";
-import { getSettings } from "../settings";
 
 import svgRaw from "../../public/sloboda_house_numbers.svg?raw";
 
@@ -105,7 +104,7 @@ function fillWrappedText(
 // Core canvas rendering
 // ---------------------------------------------------------------------------
 
-async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
+async function renderCanvas(project: Project): Promise<HTMLCanvasElement> {
   const canvas = document.createElement("canvas");
   canvas.width = 1080;
   canvas.height = 1350;
@@ -120,9 +119,9 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   const CENTER_X = 1080 / 2;
 
   // --- Computed stats ---
-  const showRedList = getSettings().redListMode;
-  const done = state.done.size;
-  const issueCount = showRedList ? state.issue.size : 0;
+  const showRedList = project.redListMode;
+  const done = project.done.size;
+  const issueCount = showRedList ? project.issue.size : 0;
   const total = ACTIVE_HOUSE_COUNT;
   const remaining = Math.max(0, total - done - issueCount);
   const pct = total > 0 ? Math.round((done / total) * 100) : 0;
@@ -137,7 +136,7 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   const titleY = 80;
   const finalTitleY = fillWrappedText(
     ctx,
-    state.campaign,
+    project.name,
     CENTER_X,
     titleY,
     CONTENT_W,
@@ -241,7 +240,7 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   );
 
   // Build modified SVG and load as image.
-  const svgModified = modifySvg(svgRaw, state.done, state.issue, showRedList);
+  const svgModified = modifySvg(svgRaw, project.done, project.issue, showRedList);
   const svgBytes = new TextEncoder().encode(svgModified);
   const svgBinary = Array.from(svgBytes, (b) => String.fromCodePoint(b)).join("");
   const svgDataUrl = "data:image/svg+xml;base64," + btoa(svgBinary);
@@ -258,7 +257,7 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
   );
 
   // Version watermark, bottom-center, 4px below map.
-  const wmDate = new Date(state.updatedAt).toISOString().slice(0, 10);
+  const wmDate = new Date(project.updatedAt).toISOString().slice(0, 10);
   const wmText = `${__APP_VERSION__} · ${wmDate}`;
   ctx.fillStyle = "rgba(215,255,215,0.4)";
   ctx.font = "20px sans-serif";
@@ -274,9 +273,9 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
 // Blob builder
 // ---------------------------------------------------------------------------
 
-export function buildImageBlob(state: State): Promise<Blob> {
+export function buildImageBlob(project: Project): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    renderCanvas(state)
+    renderCanvas(project)
       .then((canvas) => {
         canvas.toBlob(
           (blob) =>
@@ -312,7 +311,7 @@ export async function deliverImage(blob: Blob, campaign: string): Promise<void> 
 // Public API
 // ---------------------------------------------------------------------------
 
-export async function shareImage(state: State): Promise<void> {
-  const blob = await buildImageBlob(state);
-  await deliverImage(blob, state.campaign);
+export async function shareImage(project: Project): Promise<void> {
+  const blob = await buildImageBlob(project);
+  await deliverImage(blob, project.name);
 }

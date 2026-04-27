@@ -1,7 +1,7 @@
 // Stats pill: "<done> / <total> · <pct>%", with issue badge when non-zero.
 
 import { ACTIVE_HOUSE_COUNT } from "../houses";
-import { getState, subscribe } from "../state";
+import { getActiveProject, subscribe } from "../state";
 
 export function initStats(host: HTMLElement): void {
   host.classList.add("stats-pill");
@@ -32,9 +32,9 @@ export function initStats(host: HTMLElement): void {
   host.replaceChildren(doneEl, sepEl, totalEl, dotEl, pctEl, issueEl);
 
   const render = (): void => {
-    const { done, issue } = getState();
+    const { done, issue, redListMode } = getActiveProject();
     const doneCount = done.size;
-    const issueCount = issue.size;
+    const issueCount = redListMode ? issue.size : 0;
     const pct = ACTIVE_HOUSE_COUNT > 0 ? (doneCount / ACTIVE_HOUSE_COUNT) * 100 : 0;
 
     doneEl.textContent = String(doneCount);

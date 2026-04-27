@@ -3,31 +3,47 @@
 
 import type { MdDialog } from "@material/web/dialog/dialog.js";
 
-import { getState } from "../state";
-import { encodeStateToHash } from "../url-state";
+import { getState, getActiveProject, type Project } from "../state";
+import { encodeProjectToHash } from "../url-state";
 import { buildImageBlob, deliverImage } from "./share-image";
 import { showToast } from "./sheet";
 
-// ---------- JSON export ----------
+// ---------- JSON export (all projects) ----------
 
-type PersistedJson = {
-  version: number;
-  appVersion?: string;
-  campaign: string;
+type ProjectJson = {
+  id: string;
+  name: string;
   done: string[];
   issue: string[];
+  redListMode: boolean;
   updatedAt: number;
 };
 
+type ExportJson = {
+  version: 3;
+  appVersion: string;
+  activeProjectId: string;
+  projects: ProjectJson[];
+};
+
+function projectToJson(p: Project): ProjectJson {
+  return {
+    id: p.id,
+    name: p.name,
+    done: [...p.done],
+    issue: [...p.issue],
+    redListMode: p.redListMode,
+    updatedAt: p.updatedAt,
+  };
+}
+
 function stateToJson(): string {
   const state = getState();
-  const payload: PersistedJson = {
-    version: 2,
+  const payload: ExportJson = {
+    version: 3,
     appVersion: __APP_VERSION__,
-    campaign: state.campaign,
-    done: [...state.done],
-    issue: [...state.issue],
-    updatedAt: state.updatedAt,
+    activeProjectId: state.activeProjectId,
+    projects: (state.projects as Project[]).map(projectToJson),
   };
   return JSON.stringify(payload, null, 2);
 }
@@ -70,7 +86,8 @@ function ensureDialog(): MdDialog {
   const jsonBtn = actionBtn("download", "Экспорт в JSON");
 
   copyBtn.addEventListener("click", () => {
-    const hash = encodeStateToHash(getState());
+    const project = getActiveProject();
+    const hash = encodeProjectToHash(project);
     const url = location.origin + location.pathname + hash;
     if (navigator.clipboard) {
       navigator.clipboard.writeText(url).then(
@@ -86,9 +103,9 @@ function ensureDialog(): MdDialog {
   imageBtn.addEventListener("click", async () => {
     dialog.close();
     try {
-      const state = getState();
-      const blob = await buildImageBlob(state);
-      showImagePreview(blob, state.campaign);
+      const project = getActiveProject();
+      const blob = await buildImageBlob(project);
+      showImagePreview(blob, project.name);
     } catch {
       showToast("Не удалось создать картинку", "err");
     }
@@ -102,7 +119,7 @@ function ensureDialog(): MdDialog {
     a.href = url;
     a.download = `sloboda-${Date.now()}.json`;
     a.click();
-    URL.revokeObjectURL(url);
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
     showToast("Файл сохранён");
     dialog.close();
   });
@@ -130,7 +147,7 @@ export function openShareDialog(): void {
 
 // ---------- image preview overlay ----------
 
-function showImagePreview(blob: Blob, campaign: string): void {
+function showImagePreview(blob: Blob, projectName: string): void {
   const url = URL.createObjectURL(blob);
 
   const overlay = document.createElement("div");
@@ -148,7 +165,7 @@ function showImagePreview(blob: Blob, campaign: string): void {
   shareBtn.textContent = "Поделиться";
   shareBtn.style.cssText = "--md-filled-button-leading-space:32px;--md-filled-button-trailing-space:32px;";
   shareBtn.addEventListener("click", async () => {
-    await deliverImage(blob, campaign);
+    await deliverImage(blob, projectName);
     closePreview();
   });
 
