@@ -42,11 +42,11 @@ const ID_SET: ReadonlySet<string> = new Set(HOUSE_IDS);
 /**
  * The legacy-compatible label validator.
  *
- * A label is valid iff it matches `^([1-6]?\d|[1-9]/2)$`,
+ * A label is valid iff it matches `^([1-6]?\d(\/2)?)$`,
  * resolves to a known SVG id, and that id is not disabled.
  */
 export function isValidLabel(label: string): boolean {
-  if (!/^([1-6]?\d|[1-9]\/2)$/.test(label)) return false;
+  if (!/^([1-6]?\d(\/2)?)$/.test(label)) return false;
   const id = labelToHouseId(label);
   if (!ID_SET.has(id)) return false;
   if (DISABLED_IDS.has(id)) return false;
