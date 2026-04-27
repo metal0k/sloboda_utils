@@ -4,7 +4,7 @@
 // API or falls back to a download.
 
 import type { State } from "../state";
-import { ACTIVE_HOUSE_COUNT } from "../houses";
+import { ACTIVE_HOUSE_COUNT, DISABLED_HOUSE_IDS } from "../houses";
 import { COLOR_DONE, COLOR_ISSUE } from "./colors";
 import { getSettings } from "../settings";
 
@@ -45,6 +45,10 @@ function modifySvg(
   doc.documentElement.prepend(style);
 
   // Use classList.add to preserve existing cls-2 styling (font-size, family, weight).
+  for (const id of DISABLED_HOUSE_IDS) {
+    const el = doc.getElementById(id);
+    if (el) el.classList.add("is-disabled");
+  }
   for (const id of done) {
     const el = doc.getElementById(id);
     if (el) el.classList.add("is-done");
