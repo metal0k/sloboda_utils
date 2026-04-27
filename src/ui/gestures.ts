@@ -32,6 +32,7 @@ export interface PanZoomController {
   zoomOut(): void;
   resetZoom(): void;
   toggleZoomAt(clientX: number, clientY: number): void;
+  setTransform(transform: { x: number; y: number; scale: number } | null): void;
 }
 
 export function enablePanZoom(
@@ -127,6 +128,11 @@ export function enablePanZoom(
   };
 
   // ---------- pointer events ----------
+
+  // Prevent the browser from starting a native drag-and-drop on the background
+  // image when the user holds the left button and moves. Without this, the browser
+  // fires dragstart → stops delivering pointermove/pointerup → pan breaks.
+  container.addEventListener("dragstart", (e) => e.preventDefault());
 
   container.addEventListener("pointerdown", (e) => {
     // Kill any active spring-back transition so new drag starts clean.
@@ -340,6 +346,20 @@ export function enablePanZoom(
       t.scale = fit.scale;
       apply();
       scheduleSave();
+    },
+    setTransform(transform: { x: number; y: number; scale: number } | null) {
+      if (transform) {
+        t.scale = clampScale(transform.scale);
+        const clamped = clampPosition(t.scale, transform.x, transform.y);
+        t.x = clamped.x;
+        t.y = clamped.y;
+      } else {
+        const fit = computeFitTransform();
+        t.x = fit.x;
+        t.y = fit.y;
+        t.scale = fit.scale;
+      }
+      apply();
     },
     toggleZoomAt(clientX: number, clientY: number) {
       const rect = container.getBoundingClientRect();
