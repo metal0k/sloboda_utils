@@ -20,3 +20,4 @@ scripts/generate-houses.js
 
 # Playwright MCP snapshots (verification artifacts, not source).
 .playwright-mcp/
+deploy.key
