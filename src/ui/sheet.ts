@@ -309,6 +309,14 @@ export function initSheet(): { open: () => void; close: () => void } {
 
   // ===== Assemble body =====
 
+  const versionRow = document.createElement("div");
+  versionRow.className = "sheet-version";
+  const sha = __APP_VERSION__.match(/-g([0-9a-f]+)/)?.[1] ?? "";
+  const baseTag = __APP_VERSION__.split("-")[0];
+  versionRow.textContent = sha
+    ? `${baseTag} · ${sha} · ${__BUILD_DATE__}`
+    : `${__APP_VERSION__} · ${__BUILD_DATE__}`;
+
   body.append(
     greenLabel,
     greenArea,
@@ -322,6 +330,7 @@ export function initSheet(): { open: () => void; close: () => void } {
     divider(),
     importBtn,
     fileInput,
+    versionRow,
   );
 
   panel.append(dragHandle, header, body);

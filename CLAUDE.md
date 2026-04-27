@@ -48,6 +48,7 @@ Live URL: **https://metal0k.github.io/sloboda_utils/**
 ## Workflow
 
 - **Never commit or push without explicit user confirmation.** Complete the changes, run typecheck, then ask the user before running `git commit`.
+- **Releases**: tag manually with `git tag -a vX.Y.Z -m "..."` then `git push origin vX.Y.Z`. The version appears in the sheet footer (`vX.Y.Z · SHA · date`), as a watermark on the share PNG, and in the `appVersion` field of exported JSON. Between tags builds show `vX.Y.Z-N-gSHA`; a dirty working tree adds `-dirty`.
 - **Use available agents and skills.** When a task matches a specialized agent (Explore, code-reviewer, voltagent-lang:typescript-pro, etc.) or a skill, invoke it — don't do the work inline.
 
 ## Key constraints

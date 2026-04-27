@@ -12,6 +12,7 @@ import { showToast } from "./sheet";
 
 type PersistedJson = {
   version: number;
+  appVersion?: string;
   campaign: string;
   done: string[];
   issue: string[];
@@ -22,6 +23,7 @@ function stateToJson(): string {
   const state = getState();
   const payload: PersistedJson = {
     version: 2,
+    appVersion: __APP_VERSION__,
     campaign: state.campaign,
     done: [...state.done],
     issue: [...state.issue],

@@ -257,6 +257,16 @@ async function renderCanvas(state: State): Promise<HTMLCanvasElement> {
     Math.round(SVG_ORIG_H * scale),
   );
 
+  // Version watermark, bottom-right.
+  const wmDate = new Date(state.updatedAt).toISOString().slice(0, 10);
+  const wmText = `${__APP_VERSION__} · ${wmDate}`;
+  ctx.fillStyle = "rgba(215,255,215,0.4)";
+  ctx.font = "20px sans-serif";
+  ctx.textAlign = "right";
+  ctx.textBaseline = "alphabetic";
+  ctx.fillText(wmText, canvas.width - 24, canvas.height - 24);
+  ctx.textAlign = "start";
+
   return canvas;
 }
 
