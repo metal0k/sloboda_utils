@@ -14,7 +14,7 @@ export type House = {
 // Houses physically present on the map but not part of the campaign
 // (vacant / demolished / out of scope). Same set as the legacy code.
 const DISABLED_IDS: ReadonlySet<string> = new Set([
-  "_19",
+  // "_19",
   "_7",
   "_25",
   "_7_2",
