@@ -110,6 +110,9 @@ async function renderCanvas(project: Project): Promise<HTMLCanvasElement> {
   canvas.height = 1350;
   const ctx = canvas.getContext("2d")!;
 
+  // Pre-load display font so canvas draws it correctly (falls back to sans-serif if unavailable).
+  await document.fonts.load("bold 52px 'Onest'").catch(() => { /* ignore */ });
+
   // --- Background ---
   ctx.fillStyle = "#060b06";
   ctx.fillRect(0, 0, 1080, 1350);
@@ -128,7 +131,7 @@ async function renderCanvas(project: Project): Promise<HTMLCanvasElement> {
 
   // --- 1. Title ---
   ctx.fillStyle = "#ffffff";
-  ctx.font = "bold 52px sans-serif";
+  ctx.font = "bold 52px 'Onest', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "top";
 
@@ -146,7 +149,7 @@ async function renderCanvas(project: Project): Promise<HTMLCanvasElement> {
   // --- 2. Stats line ---
   const statsY = finalTitleY + titleLineHeight + 20;
   ctx.fillStyle = COLOR_DONE;
-  ctx.font = "38px sans-serif";
+  ctx.font = "38px 'Onest', sans-serif";
   ctx.fillText(`${done} / ${total} · ${pct}%`, CENTER_X, statsY);
 
   // --- 3. Progress bar ---

@@ -38,6 +38,7 @@ import { initSheet } from "./ui/sheet";
 import { showImportBanner } from "./ui/banner";
 import { initFab } from "./ui/fab";
 import { openShareDialog } from "./ui/share-dialog";
+import { initFirstRun } from "./ui/first-run";
 
 // ---------- per-project zoom persistence ----------
 
@@ -225,6 +226,7 @@ function main(): void {
   menuBtn.addEventListener("click", open);
 
   initFab(openShareDialog);
+  initFirstRun();
 
   // Restore zoom when the active project changes.
   let lastProjectId = getActiveProject().id;

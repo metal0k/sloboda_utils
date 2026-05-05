@@ -57,6 +57,13 @@
   --safe-bottom: env(safe-area-inset-bottom, 0px);
   --safe-left:   env(safe-area-inset-left, 0px);
   --safe-right:  env(safe-area-inset-right, 0px);
+
+  /* Motion tokens */
+  --motion-fast:     120ms;
+  --motion-base:     220ms;
+  --motion-slow:     360ms;
+  --motion-ease:     cubic-bezier(0.2, 0, 0, 1);
+  --motion-spring:   cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* ===== Material 3 Design Tokens — Light ===== */
@@ -127,7 +134,7 @@ html, body {
   line-height: 1;
   display: inline-block;
   user-select: none;
-  transition: font-variation-settings 150ms ease;
+  transition: font-variation-settings var(--motion-fast) var(--motion-ease);
 }
 
 #app {
@@ -172,6 +179,7 @@ html, body {
 
 /* Inline-editable project name inside the toolbar */
 .toolbar__name {
+  font-family: 'Onest', var(--md-ref-typeface-plain);
   flex: 1 1 auto;
   min-width: 0;
   font-size: 1.1rem;
@@ -186,7 +194,7 @@ html, body {
   overflow: hidden;
   text-overflow: ellipsis;
   border: 1px solid transparent;
-  transition: background 150ms, border-color 150ms;
+  transition: background var(--motion-fast), border-color var(--motion-fast);
 }
 
 .toolbar__name:hover {
@@ -206,7 +214,7 @@ html, body {
 }
 
 .toolbar__chevron .material-symbols-outlined {
-  transition: transform 200ms ease, font-variation-settings 150ms ease;
+  transition: transform var(--motion-base) var(--motion-ease), font-variation-settings var(--motion-fast) var(--motion-ease);
 }
 
 .toolbar__chevron--open .material-symbols-outlined {
@@ -253,7 +261,7 @@ html, body {
     rgb(255 255 255 / var(--stats-fill-alpha, 0)) calc(var(--stats-fill, 0%) - 6%),
     transparent var(--stats-fill, 0%)
   );
-  transition: background 300ms ease-out, opacity 300ms ease-out;
+  transition: background var(--motion-slow) var(--motion-ease), opacity var(--motion-slow) var(--motion-ease);
   pointer-events: none;
 }
 
@@ -286,6 +294,25 @@ html, body {
 .stats-pill__pct   { color: var(--md-sys-color-on-surface); }
 .stats-pill__issue { color: var(--color-issue); font-weight: 700; }
 
+/* C2 — Light mode: green tint fill + accessible done colour */
+:root[data-theme="light"] .stats-pill__done {
+  color: var(--md-sys-color-primary);
+}
+:root[data-theme="light"] .stats-pill::before {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--md-sys-color-primary) 15%, transparent) 0%,
+    color-mix(in srgb, var(--md-sys-color-primary) 15%, transparent) calc(var(--stats-fill, 0%) - 6%),
+    transparent var(--stats-fill, 0%)
+  );
+}
+:root[data-theme="light"] .stats-pill[data-progress="100"] {
+  border-color: var(--md-sys-color-primary);
+}
+:root[data-theme="light"] .stats-pill[data-progress="100"]::before {
+  background: color-mix(in srgb, var(--md-sys-color-primary) 22%, transparent);
+}
+
 /* ===== Icon buttons (MD3 icon-button custom element) ===== */
 .btn-icon {
   flex: 0 0 auto;
@@ -299,7 +326,7 @@ html, body {
   border: none;
   color: var(--md-sys-color-on-surface-variant);
   cursor: pointer;
-  transition: background 150ms;
+  transition: background var(--motion-fast);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -354,7 +381,7 @@ html, body {
   fill: #fff;
   user-select: none;
   -webkit-user-select: none;
-  transition: fill 120ms ease, filter 200ms ease;
+  transition: fill var(--motion-fast) var(--motion-ease), filter var(--motion-base) var(--motion-ease);
 }
 
 .map-stage__svg text.is-done {
@@ -378,7 +405,7 @@ html, body {
 .map-stage__svg text.is-pulsing {
   transform-box: fill-box;
   transform-origin: center;
-  animation: textPulse 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  animation: textPulse var(--motion-base) var(--motion-spring);
 }
 
 /* ===== FAB ===== */
@@ -387,6 +414,40 @@ html, body {
   z-index: 30;
   bottom: calc(16px + var(--safe-bottom));
   right: calc(16px + var(--safe-right));
+}
+
+/* ===== First-run tooltip ===== */
+.first-run-tip {
+  position: fixed;
+  z-index: 35;
+  bottom: calc(16px + var(--safe-bottom) + 68px);
+  right: calc(16px + var(--safe-right));
+  background: var(--md-sys-color-inverse-surface);
+  color: var(--md-sys-color-inverse-on-surface);
+  font-size: 0.82rem;
+  line-height: 1.45;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  max-width: 200px;
+  text-align: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity var(--motion-base) var(--motion-ease), transform var(--motion-base) var(--motion-ease);
+}
+.first-run-tip--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.first-run-tip__arrow {
+  position: absolute;
+  bottom: -6px;
+  right: 24px;
+  width: 0;
+  height: 0;
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-top: 7px solid var(--md-sys-color-inverse-surface);
 }
 
 /* ===== Sheet backdrop ===== */
@@ -412,7 +473,7 @@ html, body {
   background: color-mix(in srgb, var(--md-sys-color-surface-container-low) 86%, transparent);
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
-  transition: transform 280ms cubic-bezier(0.2, 0, 0, 1);
+  transition: transform var(--motion-base) var(--motion-ease);
   overflow-y: auto;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
@@ -520,10 +581,22 @@ html, body {
   font-size: 0.75rem;
   color: var(--md-sys-color-on-surface-variant);
   text-align: center;
-  padding: 8px 2px 0;
-  opacity: 0.7;
+  padding: 8px 2px 4px;
+  opacity: 0.55;
   font-variant-numeric: tabular-nums;
   user-select: text;
+  transform: rotate(-2deg);
+  letter-spacing: 0.07em;
+}
+.sheet-version::before {
+  content: '·  ·  ·';
+  display: block;
+  font-size: 0.6rem;
+  letter-spacing: 0.35em;
+  color: var(--md-sys-color-outline-variant);
+  margin-bottom: 6px;
+  opacity: 0.65;
+  transform: rotate(1deg);
 }
 
 .sheet-textarea {
@@ -537,7 +610,7 @@ html, body {
   padding: 10px 12px;
   resize: vertical;
   outline: none;
-  transition: border-color 150ms;
+  transition: border-color var(--motion-fast);
 }
 
 .sheet-textarea:focus { border-color: var(--md-sys-color-primary); border-width: 2px; }
@@ -743,7 +816,7 @@ html, body {
   white-space: nowrap;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 200ms ease, transform 200ms ease;
+  transition: opacity var(--motion-base) var(--motion-ease), transform var(--motion-base) var(--motion-ease);
   box-shadow: var(--elevation-2);
   max-width: calc(100vw - 32px);
 }
@@ -785,7 +858,7 @@ md-dialog [slot="headline"] {
   cursor: pointer;
   width: 100%;
   text-align: left;
-  transition: background 120ms;
+  transition: background var(--motion-fast);
 }
 
 .share-dialog-action:hover {
@@ -858,7 +931,7 @@ md-dialog [slot="headline"] {
   color: var(--md-sys-color-on-surface);
   box-shadow: var(--elevation-1);
   cursor: pointer;
-  transition: background 120ms;
+  transition: background var(--motion-fast);
   -webkit-user-select: none;
   user-select: none;
   font-family: inherit;
@@ -974,7 +1047,7 @@ md-dialog {
   align-items: center;
   gap: 6px;
   padding: 10px 8px 10px 8px;
-  transition: background 120ms;
+  transition: background var(--motion-fast);
 }
 
 .project-dropdown__row:hover {
@@ -1008,7 +1081,7 @@ md-dialog {
   padding: 2px 4px;
   border-radius: var(--radius-xs);
   cursor: pointer;
-  transition: color 120ms;
+  transition: color var(--motion-fast);
 }
 
 .project-dropdown__name:hover { color: var(--md-sys-color-primary); }
@@ -1027,7 +1100,7 @@ md-dialog {
   display: flex;
   gap: 2px;
   opacity: 0;
-  transition: opacity 120ms;
+  transition: opacity var(--motion-fast);
 }
 
 .project-dropdown__row:hover .project-dropdown__actions,
@@ -1051,7 +1124,7 @@ md-dialog {
   background: transparent;
   color: var(--md-sys-color-on-surface-variant);
   cursor: pointer;
-  transition: background 120ms, color 120ms;
+  transition: background var(--motion-fast), color var(--motion-fast);
   font-family: inherit;
 }
 
@@ -1089,7 +1162,7 @@ md-dialog {
   font-family: inherit;
   padding: 2px 6px;
   outline: none;
-  transition: border-color 120ms;
+  transition: border-color var(--motion-fast);
 }
 
 .project-dropdown__rename-input:focus {
@@ -1117,7 +1190,7 @@ md-dialog {
   font-weight: 500;
   cursor: pointer;
   text-align: left;
-  transition: background 120ms;
+  transition: background var(--motion-fast);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
 }
 
@@ -1141,7 +1214,7 @@ md-dialog {
   to   { opacity: 1; transform: translateY(0); }
 }
 .sheet-panel.is-open .sheet-section {
-  animation: sectionFadeUp 280ms cubic-bezier(0.2, 0, 0, 1) backwards;
+  animation: sectionFadeUp var(--motion-base) var(--motion-ease) backwards;
 }
 .sheet-panel.is-open .sheet-section:nth-child(1) { animation-delay: 60ms; }
 .sheet-panel.is-open .sheet-section:nth-child(3) { animation-delay: 120ms; }
@@ -1159,4 +1232,5 @@ md-dialog {
   .sheet-panel.is-open .sheet-section {
     animation: none;
   }
+  .first-run-tip { transition: opacity 0.01ms !important; }
 }
