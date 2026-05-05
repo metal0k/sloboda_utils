@@ -191,11 +191,18 @@ html, body {
 }
 
 /* ===== Stats pill ===== */
-.toolbar__stats { flex: 0 0 auto; }
+.toolbar__stats {
+  flex: 1 1 auto;
+  min-width: 120px;
+}
 
 .stats-pill {
+  position: relative;
+  isolation: isolate; /* keeps ::before below text without escaping stacking context */
+  overflow: hidden;   /* clips gradient fill to the pill's border-radius */
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 0;
   font-variant-numeric: tabular-nums;
   font-size: 0.85rem;
@@ -206,6 +213,36 @@ html, body {
   border: 1px solid var(--md-sys-color-outline-variant);
   white-space: nowrap;
   letter-spacing: 0.01em;
+}
+
+/* Progress fill: length from --stats-fill (e.g. "17.50%"),
+   alpha from --stats-fill-alpha (0..1). Both written by stats.ts. */
+.stats-pill::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: linear-gradient(
+    to right,
+    rgb(255 255 255 / var(--stats-fill-alpha, 0)) 0%,
+    rgb(255 255 255 / var(--stats-fill-alpha, 0)) calc(var(--stats-fill, 0%) - 6%),
+    transparent var(--stats-fill, 0%)
+  );
+  transition: background 300ms ease-out, opacity 300ms ease-out;
+  pointer-events: none;
+}
+
+/* Hide fill at 0% so the empty pill matches today's look */
+.stats-pill[data-progress="0"]::before { opacity: 0; }
+
+/* At 100%: brighter full-width tint as a subtle completion cue */
+.stats-pill[data-progress="100"]::before {
+  background: linear-gradient(
+    to right,
+    rgb(255 255 255 / 0.18) 0%,
+    rgb(255 255 255 / 0.18) 100%
+  );
 }
 
 .stats-pill__done  { color: var(--color-done); font-weight: 700; }
@@ -856,21 +893,17 @@ md-dialog {
 .project-dropdown {
   position: fixed;
   z-index: 25; /* above toolbar (20), below sheet backdrop (40) */
-  left: 0;
-  right: 0;
+  left: calc(var(--safe-left) + 4px); /* aligns with toolbar's left padding */
+  right: auto;
   top: 0; /* overridden by JS */
+  width: max-content;
+  min-width: 200px;
+  max-width: min(280px, calc(100vw - var(--safe-left) - var(--safe-right) - 8px));
   background: var(--md-sys-color-surface-container-high);
   box-shadow: var(--elevation-3);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
   overflow-y: auto;
   max-height: 60dvh;
-}
-
-@media (min-width: 640px) {
-  .project-dropdown {
-    right: auto;
-    width: 320px;
-  }
 }
 
 .project-dropdown__row {
