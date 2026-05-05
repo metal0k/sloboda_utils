@@ -385,22 +385,19 @@ export function initSheet(): { open: () => void; close: () => void } {
     ? `${baseTag} · ${sha} · ${__BUILD_DATE__}`
     : `${__APP_VERSION__} · ${__BUILD_DATE__}`;
 
-  body.append(
-    greenLabel,
-    greenArea,
-    greenHint,
-    greenApplyBtn,
-    divider(),
-    redToggleRow,
-    redSection,
-    divider(),
-    clearBtn,
-    divider(),
-    importBtn,
-    importConfirmRow,
-    fileInput,
-    versionRow,
-  );
+  const greenSection = document.createElement("div");
+  greenSection.className = "sheet-section";
+  greenSection.append(greenLabel, greenArea, greenHint, greenApplyBtn);
+
+  const redSectionWrapper = document.createElement("div");
+  redSectionWrapper.className = "sheet-section";
+  redSectionWrapper.append(redToggleRow, redSection);
+
+  const bottomSection = document.createElement("div");
+  bottomSection.className = "sheet-section";
+  bottomSection.append(clearBtn, divider(), importBtn, importConfirmRow, fileInput, versionRow);
+
+  body.append(greenSection, divider(), redSectionWrapper, divider(), bottomSection);
 
   panel.append(dragHandle, header, body);
   document.body.append(backdrop, panel);

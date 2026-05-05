@@ -66,6 +66,13 @@ export function initMap(svg: SVGElement, panZoom: PanZoomController): () => void
       } else {
         setStatus(id, getStatus(id) === "done" ? null : "done");
       }
+      const el = texts.get(id);
+      if (el) {
+        el.classList.remove("is-pulsing");
+        void el.getBBox(); // force reflow so re-adding restarts the animation
+        el.classList.add("is-pulsing");
+        el.addEventListener("animationend", () => el.classList.remove("is-pulsing"), { once: true });
+      }
     }, DOUBLE_DELAY_MS);
   });
 

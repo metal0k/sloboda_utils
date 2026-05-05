@@ -62,7 +62,6 @@ export function initTitle(host: HTMLElement): void {
   // --- Dropdown ---
   const dropdown = initProjectDropdown(host, {
     onClose: () => {
-      chevronIcon.textContent = "expand_more";
       chevronBtn.classList.remove("toolbar__chevron--open");
     },
     onNewProject: () => {
@@ -83,7 +82,6 @@ export function initTitle(host: HTMLElement): void {
       dropdown.close();
     } else {
       dropdown.open();
-      chevronIcon.textContent = "expand_less";
       chevronBtn.classList.add("toolbar__chevron--open");
     }
   });

@@ -1,10 +1,16 @@
 /* ===== Material 3 Design Tokens — Dark (default) ===== */
 :root {
   /* Surface scale */
-  --md-sys-color-background:              #111410;
+  --md-sys-color-background:              #0A0E0A;
   --md-sys-color-surface:                 #1A1C1A;
-  --md-sys-color-surface-container-lowest: #111410;
+  --md-sys-color-surface-container-lowest: #0A0E0A;
   --md-sys-color-surface-container-low:   #1A1C1A;
+
+  --body-gradient: radial-gradient(
+    ellipse 100% 55% at 50% 0%,
+    rgba(76, 175, 80, 0.09),
+    transparent 65%
+  );
   --md-sys-color-surface-container:       #1E201E;
   --md-sys-color-surface-container-high:  #282B28;
   --md-sys-color-surface-container-highest: #333633;
@@ -55,6 +61,11 @@
 
 /* ===== Material 3 Design Tokens — Light ===== */
 :root[data-theme="light"] {
+  --body-gradient: radial-gradient(
+    ellipse 100% 55% at 50% 0%,
+    rgba(46, 125, 50, 0.05),
+    transparent 60%
+  );
   --md-sys-color-background:              #FFFFFF;
   --md-sys-color-surface:                 #FFFFFF;
   --md-sys-color-surface-container-lowest: #FFFFFF;
@@ -99,7 +110,7 @@
 html, body {
   width: 100%;
   height: 100%;
-  background: var(--md-sys-color-background);
+  background: var(--body-gradient), var(--md-sys-color-background);
   color: var(--md-sys-color-on-surface);
   font-family: "Roboto Flex", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   font-size: 14px;
@@ -111,11 +122,12 @@ html, body {
 
 .material-symbols-outlined {
   font-family: "Material Symbols Outlined";
-  font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24;
+  font-variation-settings: "FILL" 0, "wght" 350, "GRAD" 0, "opsz" 24;
   font-size: 24px;
   line-height: 1;
   display: inline-block;
   user-select: none;
+  transition: font-variation-settings 150ms ease;
 }
 
 #app {
@@ -135,8 +147,18 @@ html, body {
   padding: calc(var(--safe-top) + 8px) calc(var(--safe-right) + 4px) 8px
            calc(var(--safe-left) + 4px);
   min-height: calc(var(--toolbar-h) + var(--safe-top));
-  background: var(--md-sys-color-surface-container);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container) 80%, transparent);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
   box-shadow: var(--elevation-1);
+}
+
+.toolbar__brand {
+  flex: 0 0 auto;
+  color: var(--color-done);
+  opacity: 0.88;
+  transform: rotate(-2deg);
+  filter: drop-shadow(0 0 5px color-mix(in srgb, var(--color-done) 40%, transparent));
 }
 
 .toolbar__title {
@@ -154,6 +176,7 @@ html, body {
   min-width: 0;
   font-size: 1.1rem;
   font-weight: 500;
+  font-variation-settings: 'opsz' 18;
   color: var(--md-sys-color-on-surface);
   padding: 4px 8px;
   border-radius: var(--radius-sm);
@@ -183,11 +206,12 @@ html, body {
 }
 
 .toolbar__chevron .material-symbols-outlined {
-  transition: transform 200ms ease;
+  transition: transform 200ms ease, font-variation-settings 150ms ease;
 }
 
 .toolbar__chevron--open .material-symbols-outlined {
   transform: rotate(180deg);
+  font-variation-settings: "FILL" 1, "wght" 450, "GRAD" 0, "opsz" 24;
 }
 
 /* ===== Stats pill ===== */
@@ -236,12 +260,23 @@ html, body {
 /* Hide fill at 0% so the empty pill matches today's look */
 .stats-pill[data-progress="0"]::before { opacity: 0; }
 
-/* At 100%: brighter full-width tint as a subtle completion cue */
+/* At 100%: green fill + pulsing ring — ties the pill to the map's done markers */
+@keyframes pillCelebrate {
+  0%   { box-shadow: 0 0 0 0   rgba(76, 175, 80, 0.60); }
+  55%  { box-shadow: 0 0 0 8px rgba(76, 175, 80, 0);    }
+  100% { box-shadow: 0 0 0 0   rgba(76, 175, 80, 0);    }
+}
+
+.stats-pill[data-progress="100"] {
+  border-color: var(--color-done);
+  animation: pillCelebrate 900ms ease-out;
+}
+
 .stats-pill[data-progress="100"]::before {
   background: linear-gradient(
     to right,
-    rgb(255 255 255 / 0.18) 0%,
-    rgb(255 255 255 / 0.18) 100%
+    color-mix(in srgb, var(--color-done) 20%, transparent) 0%,
+    color-mix(in srgb, var(--color-done) 20%, transparent) 100%
   );
 }
 
@@ -263,7 +298,6 @@ html, body {
   background: transparent;
   border: none;
   color: var(--md-sys-color-on-surface-variant);
-  font-size: 1.3rem;
   cursor: pointer;
   transition: background 150ms;
   -webkit-user-select: none;
@@ -272,6 +306,8 @@ html, body {
 
 .btn-icon:hover  { background: color-mix(in srgb, var(--md-sys-color-on-surface) 8%, transparent); }
 .btn-icon:active { background: color-mix(in srgb, var(--md-sys-color-on-surface) 12%, transparent); }
+.btn-icon:hover  .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 450, "GRAD" 0, "opsz" 24; }
+.btn-icon:active .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 24; }
 
 /* ===== Map area ===== */
 .map-viewport {
@@ -318,12 +354,32 @@ html, body {
   fill: #fff;
   user-select: none;
   -webkit-user-select: none;
-  transition: fill 120ms ease;
+  transition: fill 120ms ease, filter 200ms ease;
 }
 
-.map-stage__svg text.is-done   { fill: var(--color-done); }
-.map-stage__svg text.is-issue  { fill: var(--color-issue); }
-.map-stage__svg text.is-disabled { fill: #999; opacity: 0.4; }
+.map-stage__svg text.is-done {
+  fill: var(--color-done);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-done) 55%, transparent));
+}
+.map-stage__svg text.is-issue {
+  fill: var(--color-issue);
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--color-issue) 55%, transparent));
+}
+.map-stage__svg text.is-disabled {
+  fill: var(--md-sys-color-outline);
+  opacity: 0.45;
+}
+
+@keyframes textPulse {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.25); }
+  100% { transform: scale(1); }
+}
+.map-stage__svg text.is-pulsing {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: textPulse 280ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
 
 /* ===== FAB ===== */
 .sheet-fab {
@@ -353,7 +409,9 @@ html, body {
 .sheet-panel {
   position: fixed;
   z-index: 50;
-  background: var(--md-sys-color-surface-container-low);
+  background: color-mix(in srgb, var(--md-sys-color-surface-container-low) 86%, transparent);
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
   transition: transform 280ms cubic-bezier(0.2, 0, 0, 1);
   overflow-y: auto;
   overscroll-behavior: contain;
@@ -424,6 +482,7 @@ html, body {
 .sheet-title {
   font-size: 1rem;
   font-weight: 600;
+  font-variation-settings: 'opsz' 16;
   color: var(--md-sys-color-on-surface);
 }
 
@@ -443,6 +502,7 @@ html, body {
 .sheet-section-label {
   font-size: 0.75rem;
   font-weight: 600;
+  font-variation-settings: 'opsz' 12;
   color: var(--md-sys-color-on-surface-variant);
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -721,6 +781,7 @@ md-dialog [slot="headline"] {
   font-family: inherit;
   font-size: 1rem;
   font-weight: 400;
+  font-variation-settings: 'opsz' 16;
   cursor: pointer;
   width: 100%;
   text-align: left;
@@ -752,7 +813,7 @@ md-dialog [slot="headline"] {
 .share-preview__img {
   max-width: 90vw;
   max-height: 75vh;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   object-fit: contain;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
 }
@@ -810,6 +871,7 @@ md-dialog [slot="headline"] {
   flex-direction: column;
   gap: 0;
   font-size: 0.62rem;
+  font-variation-settings: 'opsz' 11;
   line-height: 1;
 }
 .zoom-btn--label .material-symbols-outlined {
@@ -822,6 +884,7 @@ md-dialog [slot="headline"] {
 
 .zoom-btn:hover  { background: var(--md-sys-color-surface-container-highest); }
 .zoom-btn:active { background: color-mix(in srgb, var(--md-sys-color-primary) 12%, var(--md-sys-color-surface-container-highest)); }
+.zoom-btn:active .material-symbols-outlined { font-variation-settings: "FILL" 0, "wght" 500, "GRAD" 0, "opsz" 20; }
 
 .zoom-btn .material-symbols-outlined {
   font-size: 20px;
@@ -928,6 +991,10 @@ md-dialog {
   color: var(--md-sys-color-primary);
   text-align: center;
   line-height: 1;
+}
+
+.project-dropdown__row--active .project-dropdown__check .material-symbols-outlined {
+  font-variation-settings: "FILL" 1, "wght" 500, "GRAD" 0, "opsz" 18;
 }
 
 .project-dropdown__name {
@@ -1060,4 +1127,36 @@ md-dialog {
 
 .project-dropdown__add .material-symbols-outlined {
   font-size: 20px;
+}
+
+/* backdrop-filter fallback for non-supporting browsers */
+@supports not (backdrop-filter: blur(1px)) {
+  .toolbar      { background: var(--md-sys-color-surface-container); }
+  .sheet-panel  { background: var(--md-sys-color-surface-container-low); }
+}
+
+/* B6 — Staggered sheet section reveal */
+@keyframes sectionFadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.sheet-panel.is-open .sheet-section {
+  animation: sectionFadeUp 280ms cubic-bezier(0.2, 0, 0, 1) backwards;
+}
+.sheet-panel.is-open .sheet-section:nth-child(1) { animation-delay: 60ms; }
+.sheet-panel.is-open .sheet-section:nth-child(3) { animation-delay: 120ms; }
+.sheet-panel.is-open .sheet-section:nth-child(5) { animation-delay: 180ms; }
+
+/* ===== Accessibility: reduced-motion ===== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* Sheet still needs its transform, just make it instant. */
+  .sheet-panel { transition: none !important; }
+  .sheet-panel.is-open .sheet-section {
+    animation: none;
+  }
 }

@@ -125,6 +125,18 @@ function buildShell(): {
 
   const toolbar = el("div", "toolbar");
 
+  const brandMark = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  brandMark.setAttribute("width", "24");
+  brandMark.setAttribute("height", "24");
+  brandMark.setAttribute("viewBox", "0 0 24 24");
+  brandMark.setAttribute("fill", "none");
+  brandMark.setAttribute("aria-hidden", "true");
+  brandMark.setAttribute("class", "toolbar__brand");
+  brandMark.innerHTML =
+    '<path d="M2 13L12 4l10 9" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M5 13v8h14v-8" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>' +
+    '<path d="M10 21v-5.5h4V21" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>';
+
   const titleHost = el("div", "toolbar__title");
   const statsHost = el("div", "toolbar__stats");
   const themeBtn = el("button", "toolbar__theme btn-icon");
@@ -134,7 +146,7 @@ function buildShell(): {
   menuBtn.setAttribute("aria-label", "Открыть меню");
   menuBtn.innerHTML = `<span class="material-symbols-outlined" aria-hidden="true">menu</span>`;
 
-  toolbar.append(titleHost, statsHost, themeBtn, menuBtn);
+  toolbar.append(brandMark, titleHost, statsHost, themeBtn, menuBtn);
 
   const viewport = el("div", "map-viewport");
   const stage = el("div", "map-stage");

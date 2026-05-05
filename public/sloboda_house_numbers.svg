@@ -14,16 +14,6 @@
       font-weight: 800;
       cursor: pointer;
       }
-      .selected-green {
-        fill: lawngreen;
-      }
-      .selected-red {
-        fill: darkred;
-      }
-      .disabled {
-        fill: lightgray;
-        cursor: default;
-      }
     </style>
     <filter id="filter" filterUnits="userSpaceOnUse">
       <feOffset result="offset" dx="2.007" dy="2.229" in="SourceAlpha"/>
