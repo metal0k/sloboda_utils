@@ -169,8 +169,9 @@ html, body {
 }
 
 .toolbar__title {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
+  max-width: min(60vw, 360px);
   display: flex;
   align-items: center;
   gap: 0;
@@ -180,7 +181,7 @@ html, body {
 /* Inline-editable project name inside the toolbar */
 .toolbar__name {
   font-family: 'Onest', var(--md-ref-typeface-plain);
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   font-size: 1.1rem;
   font-weight: 500;
@@ -1034,7 +1035,7 @@ md-dialog {
   top: 0; /* overridden by JS */
   width: max-content;
   min-width: 200px;
-  max-width: min(280px, calc(100vw - var(--safe-left) - var(--safe-right) - 8px));
+  max-width: min(300px, calc(100vw - var(--safe-left) - var(--safe-right) - 8px));
   background: var(--md-sys-color-surface-container-high);
   box-shadow: var(--elevation-3);
   border-radius: 0 0 var(--radius-md) var(--radius-md);
